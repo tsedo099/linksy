@@ -12360,7 +12360,7 @@ body.feed-home-scroll-lock {
 
 .feed-shell--home .feed-posts-col {
   width: 100%;
-  max-width: 720px;
+  max-width: 540px;
   margin: 0 auto;
   padding-left: 0;
   gap: 1.55rem;
@@ -13388,7 +13388,9 @@ body.feed-home-scroll-lock {
 .feed-shell--home .feed-posts-col {
   flex: none;
   width: 100%;
-  max-width: 720px;
+  /* 540px = Instagram-ийн post ribbon өргөн. 720px нь desktop-д хэт өргөн
+     харагдсан — feed-ийн posts overflow-доог надтай биш. */
+  max-width: 540px;
   margin: 0 auto;
   min-width: 0;
   gap: 1.5rem;
@@ -13418,10 +13420,18 @@ body.feed-home-scroll-lock {
 .feed-shell--home .feed-col-header-inner {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  /* `space-between` pushed the filter pills to the far right edge,
+     leaving an empty void next to the "HOME BASE" eyebrow. Centring
+     them keeps the For You / Following / Close circle row visually
+     anchored above the post stream. */
+  justify-content: center;
   gap: 1rem;
   width: 100%;
 }
+
+/* Drop the "HOME BASE" title block on /home — page context is obvious
+   from the navbar's active tab + the filter pills below. */
+.feed-shell--home .feed-title-block { display: none; }
 
 .feed-shell--home .feed-col-eyebrow,
 .feed-shell--home .stories-section-label,
