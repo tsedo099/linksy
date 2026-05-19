@@ -333,7 +333,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       refreshUnread();
     };
 
-    const backupId = window.setInterval(refreshUnread, 3000);
+    // SSE pushes unread changes; this is a fallback for when the stream
+     // drops. 3s was needlessly aggressive — every tab hit the DB 20x/min.
+    const backupId = window.setInterval(refreshUnread, 10000);
     const onVisibility = () => {
       if (document.visibilityState === "visible") refreshUnread();
     };

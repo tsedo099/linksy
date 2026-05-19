@@ -281,7 +281,9 @@ export function MessagesScreen() {
   useEffect(() => {
     const onActivity = () => { void loadConvos(); };
     window.addEventListener("linksy:conversations-activity", onActivity);
-    const backupId = window.setInterval(() => { void loadConvos(); }, 3000);
+    // Backup poll lives behind SSE + the activity event — keep it long
+     // so we don't pound /api/conversations every 3s for nothing.
+    const backupId = window.setInterval(() => { void loadConvos(); }, 8000);
     const onVisibility = () => {
       if (document.visibilityState === "visible") void loadConvos();
     };
@@ -486,7 +488,7 @@ export function MessagesScreen() {
     }
 
     void pullTyping();
-    const id = window.setInterval(pullTyping, 1500);
+    const id = window.setInterval(pullTyping, 3500);
 
     // Local sweep so the dots disappear smoothly between polls if a
     // peer's TTL lapses (the next GET would prune them anyway, but
@@ -544,7 +546,10 @@ export function MessagesScreen() {
       if (!targetId || targetId === activeIdRef.current) scheduleReload();
     };
     window.addEventListener("linksy:conversations-activity", onActivity);
-    const refreshOnInterval = window.setInterval(scheduleReload, 1000);
+    // SSE + the activity event are primary; this is a safety net only.
+    // 1s polling was hammering /api/messages and contributing to P2037s
+    // on production. 6s is plenty for the "missed event" recovery case.
+    const refreshOnInterval = window.setInterval(scheduleReload, 6000);
     const onVisibilityChange = () => {
       if (document.visibilityState === "visible") scheduleReload();
     };

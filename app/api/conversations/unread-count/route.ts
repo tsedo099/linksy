@@ -45,5 +45,13 @@ export async function GET(req: NextRequest) {
 
   const [unreadMessages, unreadConversations] = await Promise.all([messagesPromise, conversationsPromise]);
 
-  return NextResponse.json({ unreadMessages, unreadConversations });
+  return NextResponse.json(
+    { unreadMessages, unreadConversations },
+    {
+      // Per-viewer counter — browser-private. 5s of staleness is invisible
+      // to the user (the badge updates via SSE anyway); this keeps the
+      // polling fallback from hitting the DB on every interval.
+      headers: { "Cache-Control": "private, max-age=5" },
+    },
+  );
 }
