@@ -234,7 +234,11 @@ export function CreateScreenStyles() {
           .st-poll,
           .st-audience { padding: 0.65rem 0.85rem; }
 
-          .st-publish-area { padding: 0.85rem 0.85rem 1rem; }
+          /* Bottom-tabs (3.6rem) + iOS safe-area inset so the Publish
+             button sits ABOVE the fixed navbar, not behind it. */
+          .st-publish-area {
+            padding: 0.85rem 0.85rem calc(3.6rem + env(safe-area-inset-bottom, 0px) + 1rem);
+          }
         }
 
         /* Touch-device tap targets — WCAG 2.5.5. The viewer nav arrows
