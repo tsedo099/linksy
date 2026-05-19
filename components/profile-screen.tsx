@@ -562,7 +562,11 @@ export function ProfileScreen({ targetUsername }: { targetUsername?: string } = 
               <div className="pg-actions">
                 {isOwnProfile ? (
                   <>
-                    <button className="pg-act-btn pg-act-btn--primary">
+                    <button
+                      className="pg-act-btn pg-act-btn--primary"
+                      type="button"
+                      onClick={() => router.push("/settings?section=edit-profile")}
+                    >
                       <IcEdit /> Edit profile
                     </button>
                     {/* Settings shortcut — the desktop sidebar already has a
