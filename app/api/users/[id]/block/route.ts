@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth";
+import { invalidateBlockedUserIdsCache } from "@/lib/user-blocks";
 
 // POST /api/users/[id]/block - block a user
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -59,6 +60,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }),
   ]);
 
+  invalidateBlockedUserIdsCache(me.userId, targetId);
   return NextResponse.json({ blocked: true, user: target });
 }
 
@@ -74,5 +76,6 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       AND "blockedId" = ${targetId}
   `;
 
+  invalidateBlockedUserIdsCache(me.userId, targetId);
   return NextResponse.json({ blocked: false });
 }

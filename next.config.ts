@@ -48,11 +48,27 @@ const securityHeaders = (): { key: string; value: string }[] => {
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  // Compress the SSR response bytes; ~70% smaller for HTML/JSON.
+  compress: true,
+  // Avoid `Powered-By: Next.js` header noise.
+  poweredByHeader: false,
   turbopack: {
     root: resolve(projectRoot),
   },
   images: {
     remotePatterns: getNextImageRemotePatterns(),
+    // Blob URLs are immutable (we never overwrite a key) — keep the
+    // optimizer's cached variants for 1 year instead of the 60s default.
+    // Massive win on /home where every avatar/post re-renders after the
+    // CDN forgets the previous /_next/image render.
+    minimumCacheTTL: 60 * 60 * 24 * 365,
+    formats: ["image/avif", "image/webp"],
+  },
+  experimental: {
+    // Tree-shake icon libraries so we don't ship the entire set when one
+    // file only uses one icon. `lucide-react` is the biggest offender —
+    // a single `MapPin` import was pulling in the whole index.
+    optimizePackageImports: ["lucide-react"],
   },
   async headers() {
     return [

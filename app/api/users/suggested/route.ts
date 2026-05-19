@@ -35,16 +35,26 @@ export async function GET(req: NextRequest) {
     },
   });
 
-  return NextResponse.json({
-    users: users.map((u) => ({
-      id: u.id,
-      username: u.username,
-      displayName: u.displayName,
-      avatarUrl: u.avatarUrl,
-      isVerified: u.isVerified,
-      followerCount: u._count.followers,
-      followedByMe: false,
-      context: u._count.followers > 0 ? `${u._count.followers} followers` : "Suggested for you",
-    })),
-  });
+  return NextResponse.json(
+    {
+      users: users.map((u) => ({
+        id: u.id,
+        username: u.username,
+        displayName: u.displayName,
+        avatarUrl: u.avatarUrl,
+        isVerified: u.isVerified,
+        followerCount: u._count.followers,
+        followedByMe: false,
+        context: u._count.followers > 0 ? `${u._count.followers} followers` : "Suggested for you",
+      })),
+    },
+    {
+      headers: {
+        // Per-viewer payload (excludes their follows/blocks), so cache at the
+        // browser only — not on the shared CDN. 60s shaves repeated trips
+        // when the user navigates back to /home.
+        "Cache-Control": "private, max-age=60, stale-while-revalidate=120",
+      },
+    },
+  );
 }
