@@ -2494,9 +2494,13 @@ export function MessagesScreen() {
         .ms-main[data-conv-theme="violet"]  { --conv-accent: #a855f7; --conv-accent-2: #7e22ce; }
         .ms-main[data-conv-theme="rose"]    { --conv-accent: #f43f5e; --conv-accent-2: #be123c; }
 
-        /* Apply theme accent to outgoing bubbles + emphasised chrome. */
-        .ms-main .ms-bubble--mine,
-        .ms-main .ms-bubble--mine .ms-bubble-content {
+        /* Apply theme accent to outgoing bubbles + emphasised chrome.
+           NB: bubble class is `.ms-bubble--me` (not --mine). The earlier
+           selector pointed at a non-existent class, so themes silently
+           did nothing despite the swatch state changing. The gradient
+           override beats the later `.ms-bubble--me { background: var(--mc,…) }`
+           rule via specificity (data-attr + class). */
+        .ms-main[data-conv-theme]:not([data-conv-theme="default"]) .ms-bubble--me {
           background: linear-gradient(135deg, var(--conv-accent), var(--conv-accent-2));
         }
         .ms-main .ms-icon-btn--on { color: var(--conv-accent); }
