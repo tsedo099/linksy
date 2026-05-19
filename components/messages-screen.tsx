@@ -689,16 +689,25 @@ export function MessagesScreen() {
   }, [cleanupRecorder, recPreviewUrl]);
 
   async function startVoiceRecording() {
-    if (recState !== "idle" || sending || isRequest) return;
+    // Silent guard reasons surfaced so the user understands why the mic
+    // button apparently did nothing.
+    if (recState !== "idle") {
+      showError(`Already in ${recState} mode — cancel first.`);
+      return;
+    }
+    if (sending) { showError("Wait for the previous message to send."); return; }
+    if (isRequest) { showError("Accept the message request before recording."); return; }
     if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
-      showError("Microphone is not available in this browser.");
+      showError("Microphone not supported — try Chrome / Firefox / Safari on HTTPS.");
       return;
     }
     let stream: MediaStream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch {
-      showError("Microphone permission was denied.");
+    } catch (err) {
+      const name = (err as { name?: string })?.name ?? "Error";
+      // NotAllowedError = user denied, NotFoundError = no mic, etc.
+      showError(`Mic access failed (${name}). Check site permissions in the address-bar lock icon.`);
       return;
     }
     let mimeType = "";
@@ -711,9 +720,9 @@ export function MessagesScreen() {
     let recorder: MediaRecorder;
     try {
       recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
-    } catch {
+    } catch (err) {
       stream.getTracks().forEach((track) => track.stop());
-      showError("Recording is not supported in this browser.");
+      showError(`Recording not supported (${(err as Error).message?.slice(0, 80) ?? "MediaRecorder failed"}).`);
       return;
     }
     const chunks: Blob[] = [];
