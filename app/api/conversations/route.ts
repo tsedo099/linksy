@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth";
-import { areUsersBlocked, getBlockedUserIds } from "@/lib/user-blocks";
+import { areUsersBlocked, getBlockedByMeIds } from "@/lib/user-blocks";
 import { Prisma } from "@/lib/generated/prisma/client";
 import { parseRequestJsonAllowEmpty } from "@/lib/request-json";
 import { conversationCreateSchema } from "@/lib/schemas/api-bodies";
@@ -89,7 +89,10 @@ type ConversationListRow = {
 export async function GET(req: NextRequest) {
   const me = await getUser(req);
   if (!me) return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
-  const blockedIds = await getBlockedUserIds(me.userId);
+  // One-direction: only hide convos with users *I* blocked. Bidirectional
+  // (`getBlockedUserIds`) would also hide our chat as soon as someone
+  // blocks ME, which leaks the block to the blocked party.
+  const blockedIds = await getBlockedByMeIds(me.userId);
   const blockedSet = new Set(blockedIds);
 
   const whereMember = { members: { some: { userId: me.userId } } } as const;

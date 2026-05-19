@@ -49,7 +49,35 @@ export async function getBlockedUserIds(userId: string) {
   return ids;
 }
 
+/**
+ * One-direction variant: only users *I* have explicitly blocked. Used for
+ * UI filtering on the blocker's side (hiding their own conversation with
+ * the blocked party). The bidirectional `getBlockedUserIds` is correct for
+ * cross-user content hiding (feed posts, notifications), but using it to
+ * filter inbox / chat lists leaks the block to the blocked party — their
+ * conversation would vanish the moment we add the row, which is exactly
+ * how they'd realise they got blocked.
+ */
+const blockedByMeCache = new Map<string, CacheEntry>();
+export async function getBlockedByMeIds(userId: string) {
+  const now = Date.now();
+  const hit = blockedByMeCache.get(userId);
+  if (hit && hit.expiresAt > now) return hit.ids;
+
+  const rows = await prisma.$queryRaw<{ id: string }[]>`
+    SELECT "blockedId" AS "id"
+    FROM "UserBlock"
+    WHERE "blockerId" = ${userId}
+  `;
+  const ids = rows.map((row) => row.id);
+  blockedByMeCache.set(userId, { ids, expiresAt: now + BLOCKED_CACHE_TTL_MS });
+  return ids;
+}
+
 /** Drop both sides of a block from the cache after a write. */
 export function invalidateBlockedUserIdsCache(...userIds: string[]) {
-  for (const id of userIds) blockedCache.delete(id);
+  for (const id of userIds) {
+    blockedCache.delete(id);
+    blockedByMeCache.delete(id);
+  }
 }

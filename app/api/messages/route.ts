@@ -116,7 +116,10 @@ export const POST = withMetrics("/api/messages", async (req: NextRequest) => {
       select: { userId: true },
     });
     if (blockedMember) {
-      return NextResponse.json({ error: "You cannot message this conversation." }, { status: 403 });
+      // Generic copy so the response is identical whether *I* blocked
+      // them (chat is hidden from my list anyway, rare race) or they
+      // blocked me (I should not learn that — privacy).
+      return NextResponse.json({ error: "Could not send this message." }, { status: 403 });
     }
   }
 
@@ -130,7 +133,12 @@ export const POST = withMetrics("/api/messages", async (req: NextRequest) => {
       select: { userId: true },
     });
     if (otherBlocking) {
-      return NextResponse.json({ error: "Recipient has blocked this conversation." }, { status: 403 });
+      // Privacy: don't tell the sender they've been blocked — that's
+      // exactly the signal the block is meant to withhold. Return a
+      // generic error indistinguishable from a transient network /
+      // permission issue. Pair this with the conversation-list fix so
+      // the chat doesn't vanish from the blocked party's inbox.
+      return NextResponse.json({ error: "Could not send this message." }, { status: 403 });
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : "";

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getBlockedUserIds } from "@/lib/user-blocks";
+import { getBlockedByMeIds } from "@/lib/user-blocks";
 import { Prisma } from "@/lib/generated/prisma/client";
 
 /**
@@ -15,7 +15,9 @@ export async function GET(req: NextRequest) {
   const me = await getUser(req);
   if (!me) return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
 
-  const blockedIds = await getBlockedUserIds(me.userId);
+  // One-direction so the unread badge doesn't leak that we got blocked
+  // (the badge would drop the moment the other party blocked us).
+  const blockedIds = await getBlockedByMeIds(me.userId);
 
   const conversationsWhere: Prisma.ConversationWhereInput = {
     members: { some: { userId: me.userId, isRequest: false } },
