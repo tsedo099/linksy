@@ -495,6 +495,16 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   const isHomeRoute = pathname === "/home";
+  // Routes that need to scroll their content (rather than being locked to a
+  // 100vh frame with internal scroll). /notifications and /create both
+  // render long forms / lists that were getting clipped under the mobile
+  // top + bottom chrome before this.
+  const isScrollableRoute =
+    isHomeRoute ||
+    pathname === "/notifications" ||
+    pathname === "/create" ||
+    pathname?.startsWith("/settings") === true ||
+    pathname?.startsWith("/profile") === true;
   return (
     <div className={`feed-shell${pinned ? " feed-shell--left-pinned" : ""}${isHomeRoute ? " feed-shell--home" : ""}${createOpen || notifOpen ? " feed-shell--nav-hover-locked" : ""}`}>
 
@@ -614,7 +624,11 @@ export function AppShell({ children }: { children: ReactNode }) {
           inside an `overflow: hidden` 100vh frame. */}
       <main
         className="feed-main"
-        style={isHomeRoute ? { padding: 0, height: "100vh" } : { padding: 0, overflow: "hidden", height: "100vh" }}
+        style={
+          isScrollableRoute
+            ? { padding: 0, minHeight: "100vh", overflowX: "hidden", overflowY: "auto" }
+            : { padding: 0, overflow: "hidden", height: "100vh" }
+        }
       >
         {children}
       </main>
