@@ -16191,9 +16191,15 @@ html[data-theme="light"] .rk-row:hover * {
    These sit at the end of the cascade so earlier conflicting rules can't undo
    them. */
 
-/* 1) Post column width bumped to 600px — 540 felt cramped, 720 felt wide. */
-.feed-shell--home .feed-posts-col {
-  max-width: 600px !important;
+/* 1) Post column width bumped to 600px on DESKTOP only — 540 felt cramped,
+   720 felt wide. The earlier `.feed-shell--home .feed-posts-col` mobile
+   override sets max-width:100%, but THIS rule used to apply at every width
+   and was breaking iPhone layout (story rail visible only at the left edge,
+   right side a big black void). Wrap in min-width so mobile keeps 100%. */
+@media (min-width: 769px) {
+  .feed-shell--home .feed-posts-col {
+    max-width: 600px !important;
+  }
 }
 
 /* 2) Centered filter pills: drop the 3-column grid and let the pill row
