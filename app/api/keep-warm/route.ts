@@ -28,28 +28,42 @@ export async function GET() {
     out.db = "fail";
     out.dbError = (err as Error).message?.slice(0, 200);
   }
-  // Fresh client per call to isolate from any cached/broken shared state.
-  // If THIS connects but `getSharedRedis()` doesn't, the bug is the cache.
+  // Parse the URL ourselves and pass explicit constructor args, in case
+  // ioredis is mangling the URL (special chars, missing tls, etc.).
   const redisUrl = process.env.REDIS_URL;
   if (redisUrl) {
-    const r = new Redis(redisUrl, {
-      maxRetriesPerRequest: 3,
-      connectTimeout: 5000,
-      family: 0,
-      lazyConnect: true,
-    });
     try {
-      await r.connect();
-      const pong = await r.ping();
-      out.redis = pong === "PONG" ? "ok" : `unexpected:${pong}`;
+      const u = new URL(redisUrl.trim());
+      out.redisHost = u.hostname;
+      out.redisPort = u.port;
+      out.redisUsername = u.username;
+      out.redisProtocol = u.protocol;
+      const r = new Redis({
+        host: u.hostname,
+        port: Number(u.port || 6379),
+        username: u.username || "default",
+        password: decodeURIComponent(u.password),
+        tls: u.protocol === "rediss:" ? {} : undefined,
+        maxRetriesPerRequest: 3,
+        connectTimeout: 6000,
+        family: 0,
+        lazyConnect: true,
+      });
+      try {
+        await r.connect();
+        const pong = await r.ping();
+        out.redis = pong === "PONG" ? "ok" : `unexpected:${pong}`;
+      } catch (err) {
+        out.redis = "fail";
+        out.redisError = (err as Error).message?.slice(0, 200);
+        const cause = (err as { cause?: Error })?.cause;
+        if (cause) out.redisCause = (cause as Error).message?.slice(0, 200);
+      } finally {
+        r.disconnect();
+      }
     } catch (err) {
-      out.redis = "fail";
+      out.redis = "url-parse-fail";
       out.redisError = (err as Error).message?.slice(0, 200);
-      // Surface the underlying cause when ioredis wraps it.
-      const cause = (err as { cause?: Error })?.cause;
-      if (cause) out.redisCause = (cause as Error).message?.slice(0, 200);
-    } finally {
-      r.disconnect();
     }
   } else {
     out.redis = "no-client";
