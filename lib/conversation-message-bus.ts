@@ -1,5 +1,6 @@
 import "server-only";
 import Redis from "ioredis";
+import { buildRedis } from "@/lib/redis";
 import { prisma } from "@/lib/prisma";
 import { publishInboxUpdate } from "@/lib/user-inbox-bus";
 
@@ -52,8 +53,8 @@ class ConversationMessageBus {
     const url = process.env.REDIS_URL;
     if (!url) return;
     try {
-      this.pub = new Redis(url, { maxRetriesPerRequest: 2 });
-      this.sub = new Redis(url, { maxRetriesPerRequest: 2 });
+      this.pub = buildRedis(url);
+      this.sub = buildRedis(url);
       this.pub.on("error", () => { /* Redis optional */ });
       this.sub.on("error", () => { /* ignore */ });
       this.sub.on("message", (channel, message) => {

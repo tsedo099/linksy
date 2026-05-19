@@ -1,5 +1,6 @@
 import "server-only";
 import Redis from "ioredis";
+import { buildRedis } from "@/lib/redis";
 
 /**
  * Per-user "something happened in your inbox" bus.
@@ -41,8 +42,8 @@ class UserInboxBus {
     const url = process.env.REDIS_URL;
     if (!url) return;
     try {
-      this.pub = new Redis(url, { maxRetriesPerRequest: 2 });
-      this.sub = new Redis(url, { maxRetriesPerRequest: 2 });
+      this.pub = buildRedis(url);
+      this.sub = buildRedis(url);
       this.pub.on("error", () => undefined);
       this.sub.on("error", () => undefined);
       this.sub.on("message", (channel, message) => {

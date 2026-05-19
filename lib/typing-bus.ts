@@ -1,4 +1,5 @@
 import Redis from "ioredis";
+import { buildRedis } from "@/lib/redis";
 
 export type TypingUser = {
   id: string;
@@ -37,8 +38,8 @@ class TypingBus {
     const url = process.env.REDIS_URL;
     if (!url) return;
     try {
-      this.pub = new Redis(url, { maxRetriesPerRequest: 2 });
-      this.sub = new Redis(url, { maxRetriesPerRequest: 2 });
+      this.pub = buildRedis(url);
+      this.sub = buildRedis(url);
       this.pub.on("error", () => { /* silent — Redis is optional */ });
       this.sub.on("error", () => { /* silent */ });
       this.sub.on("message", (channel, message) => {

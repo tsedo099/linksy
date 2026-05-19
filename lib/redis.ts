@@ -1,5 +1,17 @@
 import Redis from "ioredis";
 
+/**
+ * Build a Redis client with the Upstash-from-Vercel options every bus
+ * needs. Centralised so a tweak (e.g. tls/family) only happens once.
+ */
+export function buildRedis(url: string): Redis {
+  return new Redis(url, {
+    maxRetriesPerRequest: 2,
+    connectTimeout: 8000,
+    family: 0,
+  });
+}
+
 let redis: Redis | null = null;
 
 export function getSharedRedis(): Redis | null {
@@ -7,13 +19,7 @@ export function getSharedRedis(): Redis | null {
   const url = process.env.REDIS_URL;
   if (!url) return null;
   try {
-    // `lazyConnect: true` + `enableOfflineQueue: false` was a deadly combo:
-    // the first command (e.g. publish from a hot path) failed with
-    // "Stream isn't writeable" because the socket hadn't connected yet and
-    // the queue was disabled. Drop lazyConnect so ioredis dials eagerly;
-    // keep enableOfflineQueue on (the default) so any command issued during
-    // a reconnect waits instead of erroring out.
-    redis = new Redis(url, { maxRetriesPerRequest: 2 });
+    redis = buildRedis(url);
     redis.on("error", () => { /* silent — Redis is optional */ });
     return redis;
   } catch {
