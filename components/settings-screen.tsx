@@ -599,6 +599,189 @@ function BlockedPage({
   );
 }
 
+type CloseCircleMember = {
+  id: string;
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+  isVerified: boolean;
+};
+
+function CloseCirclePage({
+  onBack,
+  onToast,
+}: {
+  onBack?: () => void;
+  onToast: (kind: "error" | "success", message: string) => void;
+}) {
+  const [members, setMembers] = useState<CloseCircleMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [actionId, setActionId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<CloseCircleMember[]>([]);
+  const [searching, setSearching] = useState(false);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/close-circle")
+      .then((r) => r.ok ? r.json() : Promise.reject(new Error("Could not load close circle.")))
+      .then((data: { members?: CloseCircleMember[] }) => {
+        if (alive) setMembers(data.members ?? []);
+      })
+      .catch((error) => {
+        if (alive) onToast("error", error instanceof Error ? error.message : "Could not load close circle.");
+      })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [onToast]);
+
+  // Debounced username search — same pattern AddPeopleDialog uses.
+  useEffect(() => {
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    const q = searchQuery.trim();
+    if (!q) { setSearchResults([]); return; }
+    setSearching(true);
+    searchTimerRef.current = setTimeout(async () => {
+      try {
+        const r = await fetch(`/api/users/search?q=${encodeURIComponent(q)}`);
+        if (!r.ok) { setSearchResults([]); return; }
+        const data = await r.json() as { users?: CloseCircleMember[] };
+        const existingIds = new Set(members.map((m) => m.id));
+        setSearchResults((data.users ?? []).filter((u) => !existingIds.has(u.id)));
+      } finally {
+        setSearching(false);
+      }
+    }, 280);
+    return () => { if (searchTimerRef.current) clearTimeout(searchTimerRef.current); };
+  }, [searchQuery, members]);
+
+  async function add(user: CloseCircleMember) {
+    if (actionId) return;
+    setActionId(user.id);
+    try {
+      const r = await fetch("/api/close-circle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetId: user.id }),
+      });
+      const data = await r.json().catch(() => null) as { error?: string } | null;
+      if (!r.ok) throw new Error(data?.error ?? "Could not add this person.");
+      setMembers((cur) => [...cur, user]);
+      setSearchResults((cur) => cur.filter((u) => u.id !== user.id));
+      onToast("success", `${user.displayName || user.username} added to close circle.`);
+    } catch (error) {
+      onToast("error", error instanceof Error ? error.message : "Could not add this person.");
+    } finally {
+      setActionId(null);
+    }
+  }
+
+  async function remove(user: CloseCircleMember) {
+    if (actionId) return;
+    setActionId(user.id);
+    try {
+      const r = await fetch("/api/close-circle", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetId: user.id }),
+      });
+      const data = await r.json().catch(() => null) as { error?: string } | null;
+      if (!r.ok) throw new Error(data?.error ?? "Could not remove this person.");
+      setMembers((cur) => cur.filter((m) => m.id !== user.id));
+      onToast("success", `${user.displayName || user.username} removed from close circle.`);
+    } catch (error) {
+      onToast("error", error instanceof Error ? error.message : "Could not remove this person.");
+    } finally {
+      setActionId(null);
+    }
+  }
+
+  return (
+    <Page title="Close circle" onBack={onBack}>
+      <Card>
+        <p style={{ marginTop: 0, color: "var(--app-text-muted)", fontSize: "0.875rem" }}>
+          Only people in your close circle can see posts you share with the Close Circle audience.
+        </p>
+        <input
+          type="search"
+          placeholder="Search by username…"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={{
+            width: "100%",
+            padding: "0.6rem 0.85rem",
+            borderRadius: 10,
+            border: "1px solid var(--app-border)",
+            background: "var(--app-card-soft, var(--app-card))",
+            color: "var(--app-text)",
+            fontSize: "0.92rem",
+            marginTop: "0.75rem",
+          }}
+        />
+        {searchQuery.trim() && (
+          <div className="sg-blocked-list" style={{ marginTop: "0.75rem" }}>
+            {searching && <div style={{ padding: "0.5rem", color: "var(--app-text-muted)", fontSize: "0.85rem" }}>Searching…</div>}
+            {!searching && searchResults.length === 0 && (
+              <div style={{ padding: "0.5rem", color: "var(--app-text-muted)", fontSize: "0.85rem" }}>No matches.</div>
+            )}
+            {searchResults.map((user) => (
+              <div key={user.id} className="sg-blocked-row">
+                <AvatarPreview avatarUrl={user.avatarUrl} displayName={user.displayName || user.username} className="sg-blocked-avatar" />
+                <div className="sg-blocked-meta">
+                  <span className="sg-blocked-name">{user.displayName || user.username}</span>
+                  <span className="sg-blocked-sub">@{user.username}</span>
+                </div>
+                <button
+                  type="button"
+                  className="sg-unblock-btn"
+                  disabled={actionId === user.id}
+                  onClick={() => add(user)}
+                >
+                  {actionId === user.id ? "Adding…" : "Add"}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      <Card>
+        <h3 style={{ marginTop: 0, fontSize: "0.95rem" }}>
+          Your close circle ({members.length})
+        </h3>
+        {loading ? (
+          <p style={{ color: "var(--app-text-muted)", fontSize: "0.85rem" }}>Loading…</p>
+        ) : members.length === 0 ? (
+          <p style={{ color: "var(--app-text-muted)", fontSize: "0.85rem" }}>
+            No one added yet. Search above to add people.
+          </p>
+        ) : (
+          <div className="sg-blocked-list">
+            {members.map((user) => (
+              <div key={user.id} className="sg-blocked-row">
+                <AvatarPreview avatarUrl={user.avatarUrl} displayName={user.displayName || user.username} className="sg-blocked-avatar" />
+                <div className="sg-blocked-meta">
+                  <span className="sg-blocked-name">{user.displayName || user.username}</span>
+                  <span className="sg-blocked-sub">@{user.username}</span>
+                </div>
+                <button
+                  type="button"
+                  className="sg-unblock-btn"
+                  disabled={actionId === user.id}
+                  onClick={() => remove(user)}
+                >
+                  {actionId === user.id ? "Removing…" : "Remove"}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </Page>
+  );
+}
+
 function MutedPage({
   onBack,
   onToast,
@@ -1817,6 +2000,7 @@ export function SettingsScreen() {
         items: [
           { key: "privacy", icon: IcLock, label: sb.itemPrivacy },
           { key: "blocked", icon: IcBan, label: sb.itemBlocked },
+          { key: "close-circle", icon: IcUser, label: sb.itemCloseCircle },
           { key: "story", icon: IcCamera, label: sb.itemStory },
           { key: "messages", icon: IcMsg, label: sb.itemMessages },
           { key: "tags", icon: IcTag, label: sb.itemTags },
@@ -1907,6 +2091,8 @@ export function SettingsScreen() {
         return <HelpPage onBack={onBack} onNavigate={setPage} sidebar={sb} content={sc} />;
       case "blocked":
         return <BlockedPage onBack={onBack} onToast={showToast} />;
+      case "close-circle":
+        return <CloseCirclePage onBack={onBack} onToast={showToast} />;
       case "story":
         return (
           <SimpleTogglePage

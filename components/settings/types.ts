@@ -59,6 +59,7 @@ export type PageKey =
   | "notifications"
   | "privacy"
   | "blocked"
+  | "close-circle"
   | "story"
   | "messages"
   | "tags"

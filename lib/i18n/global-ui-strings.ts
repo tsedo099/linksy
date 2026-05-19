@@ -977,6 +977,7 @@ export type SettingsSidebarStrings = {
   itemNotifications: string;
   itemPrivacy: string;
   itemBlocked: string;
+  itemCloseCircle: string;
   itemStory: string;
   itemMessages: string;
   itemTags: string;
@@ -1011,6 +1012,7 @@ const SETTINGS_SIDEBAR: Record<AppLanguage, SettingsSidebarStrings> = {
     itemNotifications: "Notifications",
     itemPrivacy: "Account privacy",
     itemBlocked: "Blocked",
+    itemCloseCircle: "Close circle",
     itemStory: "Stories and location",
     itemMessages: "Messages and replies",
     itemTags: "Tags and mentions",
@@ -1043,6 +1045,7 @@ const SETTINGS_SIDEBAR: Record<AppLanguage, SettingsSidebarStrings> = {
     itemNotifications: "Мэдэгдэл",
     itemPrivacy: "Нууцлал",
     itemBlocked: "Хаасан",
+    itemCloseCircle: "Дотны хүрээ",
     itemStory: "Түүвэр ба байршил",
     itemMessages: "Зурвас ба хариулт",
     itemTags: "Шошго ба дурдлага",
@@ -1075,6 +1078,7 @@ const SETTINGS_SIDEBAR: Record<AppLanguage, SettingsSidebarStrings> = {
     itemNotifications: "通知",
     itemPrivacy: "账户隐私",
     itemBlocked: "已屏蔽",
+    itemCloseCircle: "亲密好友",
     itemStory: "故事与位置",
     itemMessages: "消息与回复",
     itemTags: "标签与提及",
@@ -1107,6 +1111,7 @@ const SETTINGS_SIDEBAR: Record<AppLanguage, SettingsSidebarStrings> = {
     itemNotifications: "通知",
     itemPrivacy: "アカウントのプライバシー",
     itemBlocked: "ブロック",
+    itemCloseCircle: "親しい友達",
     itemStory: "ストーリーと位置情報",
     itemMessages: "メッセージと返信",
     itemTags: "タグとメンション",
@@ -1139,6 +1144,7 @@ const SETTINGS_SIDEBAR: Record<AppLanguage, SettingsSidebarStrings> = {
     itemNotifications: "알림",
     itemPrivacy: "계정 개인정보",
     itemBlocked: "차단됨",
+    itemCloseCircle: "친한 친구",
     itemStory: "스토리 및 위치",
     itemMessages: "메시지 및 답장",
     itemTags: "태그 및 멘션",
@@ -1171,6 +1177,7 @@ const SETTINGS_SIDEBAR: Record<AppLanguage, SettingsSidebarStrings> = {
     itemNotifications: "Benachrichtigungen",
     itemPrivacy: "Kontodatenschutz",
     itemBlocked: "Blockiert",
+    itemCloseCircle: "Enger Kreis",
     itemStory: "Stories und Standort",
     itemMessages: "Nachrichten und Antworten",
     itemTags: "Tags und Erwähnungen",
@@ -1203,6 +1210,7 @@ const SETTINGS_SIDEBAR: Record<AppLanguage, SettingsSidebarStrings> = {
     itemNotifications: "Уведомления",
     itemPrivacy: "Конфиденциальность аккаунта",
     itemBlocked: "Заблокированные",
+    itemCloseCircle: "Близкий круг",
     itemStory: "Сторис и геолокация",
     itemMessages: "Сообщения и ответы",
     itemTags: "Теги и упоминания",
