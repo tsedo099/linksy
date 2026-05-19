@@ -410,6 +410,11 @@ export function CreateScreen() {
 
   return (
     <AppShell>
+      {/* .linksy-settings-route triggers the globals.css :has() rule that
+          overrides AppShell's overflow:hidden + height:100vh on .feed-main
+          so the create page can scroll naturally on mobile (st-root flips
+          to height:auto at <800px but needs a scrollable parent). */}
+      <div className="linksy-settings-route">
       <div className="st-root">
 
         {/* ── slim header ── */}
@@ -674,6 +679,7 @@ export function CreateScreen() {
             {toast.msg}
           </div>
         )}
+      </div>
       </div>
 
       <CreateScreenStyles />
