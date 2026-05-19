@@ -9,6 +9,9 @@ export type ProfileData = {
   createdAt: string;
   _count: { posts: number; followers: number; following: number };
   followedByMe?: boolean;
+  /** True when the *target* user follows the viewer back — enables the
+   *  "Follow back" CTA when the viewer isn't following them yet. */
+  followsMe?: boolean;
   hasActiveStory?: boolean;
   hasUnviewedStory?: boolean;
 };
@@ -89,6 +92,9 @@ export type ProfileStrings = {
   followers: string;
   following: string;
   follow: string;
+  /** Label shown when the *target* follows the viewer but the viewer
+   *  hasn't followed back yet — drives the reciprocal-follow CTA. */
+  followBack: string;
   saving: string;
   message: string;
   opening: string;
@@ -125,6 +131,7 @@ export const PROFILE_STRINGS: { en: ProfileStrings; mn: ProfileStrings } = {
     followers: "Followers",
     following: "Following",
     follow: "Follow",
+    followBack: "Follow back",
     saving: "Saving...",
     message: "Message",
     opening: "Opening...",
@@ -159,6 +166,7 @@ export const PROFILE_STRINGS: { en: ProfileStrings; mn: ProfileStrings } = {
     followers: "Дагагч",
     following: "Дагадаг",
     follow: "Дагах",
+    followBack: "Буцааж дагах",
     saving: "Хадгалж байна...",
     message: "Зурвас",
     opening: "Нээж байна...",

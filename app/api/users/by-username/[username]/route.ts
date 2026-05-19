@@ -32,7 +32,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ user
       creatorMode: true,
       createdAt: true,
       _count: { select: { posts: true, followers: true, following: true } },
+      // followers = rows where viewer is the follower of this user → tells us
+      // "I follow them" (followedByMe).
       followers: { where: { followerId: me.userId }, select: { followerId: true } },
+      // following = rows where this user is the follower of the viewer →
+      // tells us "they follow me" (followsMe). Drives the "Follow back" CTA.
+      following: { where: { followingId: me.userId }, select: { followingId: true } },
     },
   });
 
@@ -62,7 +67,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ user
     user: {
       ...user,
       followedByMe: user.followers.length > 0,
+      followsMe: user.following.length > 0,
       followers: undefined,
+      following: undefined,
       hasActiveStory: storyCount > 0,
       hasUnviewedStory: unviewedStoryCount > 0,
     },

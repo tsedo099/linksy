@@ -1,7 +1,6 @@
 ﻿"use client";
 
 import { useLanguagePreferences } from "@/components/language-provider";
-import { TipDialog } from "@/components/tip-dialog";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
@@ -28,7 +27,6 @@ import {
   type SavedPostItem,
 } from "@/components/profile/profile-types";
 import {
-  IcArchive,
   IcComment,
   IcEdit,
   IcGrid,
@@ -70,7 +68,6 @@ export function ProfileScreen({ targetUsername }: { targetUsername?: string } = 
   const [avatarBroken, setAvatarBroken]   = useState(false);
   const [profileStoryGroup, setProfileStoryGroup] = useState<ApiStoryGroup | null>(null);
   const [messagePending, setMessagePending] = useState(false);
-  const [tipDialogOpen, setTipDialogOpen] = useState(false);
   const router = useRouter();
   const isOwnProfile = Boolean(profile && viewerId && profile.id === viewerId);
 
@@ -568,9 +565,6 @@ export function ProfileScreen({ targetUsername }: { targetUsername?: string } = 
                     <button className="pg-act-btn pg-act-btn--primary">
                       <IcEdit /> Edit profile
                     </button>
-                    <button className="pg-act-btn">
-                      <IcArchive /> Archive
-                    </button>
                     {/* Settings shortcut — the desktop sidebar already has a
                         Settings tab, but on mobile (where the sidebar is
                         hidden) this is the only way for a logged-in user to
@@ -597,19 +591,16 @@ export function ProfileScreen({ targetUsername }: { targetUsername?: string } = 
                       disabled={followPending}
                       aria-pressed={Boolean(profile.followedByMe)}
                     >
-                      {followPending ? pt.saving : profile.followedByMe ? pt.following : pt.follow}
+                      {followPending
+                        ? pt.saving
+                        : profile.followedByMe
+                          ? pt.following
+                          : profile.followsMe
+                            ? pt.followBack
+                            : pt.follow}
                     </button>
                     <button className="pg-act-btn" type="button" onClick={handleMessage} disabled={messagePending}>
                       {messagePending ? pt.opening : pt.message}
-                    </button>
-                    <button
-                      className="pg-act-btn"
-                      type="button"
-                      onClick={() => setTipDialogOpen(true)}
-                      title="Send a tip"
-                      aria-label={`Send a tip to ${profile.displayName || profile.username}`}
-                    >
-                      Tip
                     </button>
                   </>
                 )}
@@ -751,14 +742,6 @@ export function ProfileScreen({ targetUsername }: { targetUsername?: string } = 
           }}
         />
       )}
-      {tipDialogOpen && profile && !isOwnProfile ? (
-        <TipDialog
-          toUserId={profile.id}
-          toUsername={profile.username}
-          toDisplayName={profile.displayName || profile.username}
-          onClose={() => setTipDialogOpen(false)}
-        />
-      ) : null}
       {highlightComposerOpen && profile && isOwnProfile && (
         <HighlightComposerModal
           userId={profile.id}
