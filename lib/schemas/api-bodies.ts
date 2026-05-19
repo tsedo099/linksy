@@ -184,6 +184,9 @@ export const mePatchSchema = z.object({
     ),
   /** Skip the "show adult content?" reveal dialog (adults only). Default false. */
   autoRevealAdultContent: z.boolean().optional(),
+  /** Cosmetic / preference toggles (Privacy, Story, Tags, Comments panels).
+   *  Server merges with existing featurePrefs; UI sends only the changed key. */
+  featurePrefs: z.record(z.string(), z.union([z.boolean(), z.string(), z.number()])).optional(),
 });
 
 export const meDeleteBodySchema = z.object({

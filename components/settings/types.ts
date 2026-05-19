@@ -19,6 +19,11 @@ export type ProfileUser = {
   preferredLanguage: AppLanguage;
   twoFactorEnabled?: boolean;
   username: string;
+  /** Open-ended preference blob backed by User.featurePrefs Json. Used
+   *  for cosmetic-but-actually-persisted toggles (Privacy panel,
+   *  Story / Tags / Comments pages). Keys are documented in
+   *  components/settings/feature-prefs-keys.ts. */
+  featurePrefs?: Record<string, boolean | string | number>;
   /** From GET /api/auth/me — Prisma `SubscriptionTier` */
   subscriptionTier?: string;
   subscriptionExpiresAt?: string | null;

@@ -196,6 +196,15 @@ model User {
    */
   accountDeletionRequestedAt DateTime?
   notificationPrefs Json?
+  /**
+   * Feature-flag preferences (Privacy / Story / Tags / Comments toggle
+   * panels). Stored as a single JSON blob so adding a toggle in the UI
+   * doesn't require a new schema migration each time. Schema is open;
+   * server PATCH merges incoming keys with the existing object.
+   *
+   * Defaults applied client-side when the key is missing.
+   */
+  featurePrefs     Json?
   emailDigest      EmailDigestCadence @default(OFF)
   digestLastSentAt DateTime?
   /** App UI + transactional email/Web Push locale (`en`,`mn`,`zh`,`ja`,`ko`,`ar`). */

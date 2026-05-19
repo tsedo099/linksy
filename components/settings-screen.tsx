@@ -92,19 +92,9 @@ function PrivacyPage({
   onProfileUpdated: (user: ProfileUser) => void;
   onToast: (kind: "error" | "success", message: string) => void;
 }) {
-  const [settings, setSettings] = useStoredState("linksy-settings-privacy", {
-    activity: false,
-    profilePublic: true,
-    sensitive: true,
-    tagging: true,
-  });
   const [savingKey, setSavingKey] = useState<
     "showFollowers" | "showFollowing" | "defaultAllowComments" | "defaultHideLikes" | null
   >(null);
-
-  const toggle = (key: keyof typeof settings) => {
-    setSettings((current) => ({ ...current, [key]: !current[key] }));
-  };
 
   async function toggleAccountPrivacy(key: "showFollowers" | "showFollowing") {
     if (!me || savingKey) return;
@@ -166,6 +156,33 @@ function PrivacyPage({
     }
   }
 
+  const prefs = (me?.featurePrefs ?? {}) as Record<string, unknown>;
+  const prefValue = (key: string, fallback: boolean): boolean =>
+    typeof prefs[key] === "boolean" ? (prefs[key] as boolean) : fallback;
+  const [prefSavingKey, setPrefSavingKey] = useState<string | null>(null);
+  async function flipPref(key: string, fallback: boolean) {
+    if (!me || prefSavingKey) return;
+    const next = !prefValue(key, fallback);
+    const previous = me;
+    setPrefSavingKey(key);
+    onProfileUpdated({ ...me, featurePrefs: { ...(me.featurePrefs ?? {}), [key]: next } });
+    try {
+      const r = await fetch("/api/auth/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ featurePrefs: { [key]: next } }),
+      });
+      const data = (await r.json().catch(() => null)) as { error?: string; user?: ProfileUser } | null;
+      if (!r.ok || !data?.user) throw new Error(data?.error ?? "Could not save preference.");
+      onProfileUpdated(data.user);
+    } catch (error) {
+      onProfileUpdated(previous);
+      onToast("error", error instanceof Error ? error.message : "Could not save preference.");
+    } finally {
+      setPrefSavingKey(null);
+    }
+  }
+
   return (
     <Page title="Privacy" onBack={onBack}>
       <CardLabel label="Profile" />
@@ -173,7 +190,7 @@ function PrivacyPage({
         <Row
           label="Public profile"
           desc="Anyone can view your profile"
-          right={<Toggle on={settings.profilePublic} onChange={() => toggle("profilePublic")} />}
+          right={<Toggle on={prefValue("profilePublic", true)} onChange={() => flipPref("profilePublic", true)} disabled={!me || prefSavingKey === "profilePublic"} />}
         />
         <Row
           label="Show followers list"
@@ -188,16 +205,16 @@ function PrivacyPage({
         <Row
           label="Activity status"
           desc="Let others see when you are online"
-          right={<Toggle on={settings.activity} onChange={() => toggle("activity")} />}
+          right={<Toggle on={prefValue("activityStatus", false)} onChange={() => flipPref("activityStatus", false)} disabled={!me || prefSavingKey === "activityStatus"} />}
         />
         <Row
           label="Allow tags on posts"
-          right={<Toggle on={settings.tagging} onChange={() => toggle("tagging")} />}
+          right={<Toggle on={prefValue("allowTagsOnPosts", true)} onChange={() => flipPref("allowTagsOnPosts", true)} disabled={!me || prefSavingKey === "allowTagsOnPosts"} />}
         />
         <Row
           label="Filter sensitive content"
           desc="Blur content that may be inappropriate"
-          right={<Toggle on={settings.sensitive} onChange={() => toggle("sensitive")} />}
+          right={<Toggle on={prefValue("filterSensitive", true)} onChange={() => flipPref("filterSensitive", true)} disabled={!me || prefSavingKey === "filterSensitive"} />}
         />
       </Card>
 
@@ -383,31 +400,75 @@ function AppearancePage({ onBack }: { onBack?: () => void }) {
   );
 }
 
+/**
+ * Backend-backed toggle page. Each item references a key inside
+ * `User.featurePrefs` (Json). Optimistic update on click, PATCH /api/auth/me
+ * with `{ featurePrefs: { [key]: next } }` — server merges into the
+ * existing blob so we don't clobber other panels' keys.
+ */
 function SimpleTogglePage({
   onBack,
   items,
-  storageKey,
   title,
+  me,
+  onProfileUpdated,
+  onToast,
 }: {
   onBack?: () => void;
-  items: Array<{ label: string; desc?: string }>;
-  storageKey: string;
+  items: Array<{ key: string; label: string; desc?: string; defaultOn?: boolean }>;
   title: string;
+  me: ProfileUser | null;
+  onProfileUpdated: (user: ProfileUser) => void;
+  onToast: (kind: "error" | "success", message: string) => void;
 }) {
-  const [values, setValues] = useStoredToggleList(storageKey, items.length);
+  const [savingKey, setSavingKey] = useState<string | null>(null);
+  const prefs = (me?.featurePrefs ?? {}) as Record<string, unknown>;
+
+  function valueOf(item: { key: string; defaultOn?: boolean }): boolean {
+    const raw = prefs[item.key];
+    if (typeof raw === "boolean") return raw;
+    return item.defaultOn !== false;
+  }
+
+  async function flip(item: { key: string; defaultOn?: boolean }) {
+    if (!me || savingKey) return;
+    const next = !valueOf(item);
+    const previous = me;
+    setSavingKey(item.key);
+    onProfileUpdated({
+      ...me,
+      featurePrefs: { ...(me.featurePrefs ?? {}), [item.key]: next },
+    });
+    try {
+      const r = await fetch("/api/auth/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ featurePrefs: { [item.key]: next } }),
+      });
+      const data = (await r.json().catch(() => null)) as { error?: string; user?: ProfileUser } | null;
+      if (!r.ok || !data?.user) throw new Error(data?.error ?? "Could not save preference.");
+      onProfileUpdated(data.user);
+    } catch (error) {
+      onProfileUpdated(previous);
+      onToast("error", error instanceof Error ? error.message : "Could not save preference.");
+    } finally {
+      setSavingKey(null);
+    }
+  }
 
   return (
     <Page title={title} onBack={onBack}>
       <Card>
-        {items.map((item, index) => (
+        {items.map((item) => (
           <Row
-            key={`${item.label}-${index}`}
+            key={item.key}
             label={item.label}
             desc={item.desc}
             right={
               <Toggle
-                on={values[index] ?? false}
-                onChange={() => setValues((current) => current.map((value, currentIndex) => currentIndex === index ? !value : value))}
+                on={valueOf(item)}
+                onChange={() => flip(item)}
+                disabled={!me || savingKey === item.key}
               />
             }
           />
@@ -2098,11 +2159,13 @@ export function SettingsScreen() {
           <SimpleTogglePage
             title={sb.itemStory}
             onBack={onBack}
-            storageKey="linksy-settings-story"
+            me={me}
+            onProfileUpdated={setMe}
+            onToast={showToast}
             items={[
-              { label: sc.storyLocShow, desc: sc.storyLocShowDesc },
-              { label: sc.storyAutoArchive },
-              { label: sc.storyNearby },
+              { key: "storyShowLocation", label: sc.storyLocShow, desc: sc.storyLocShowDesc, defaultOn: false },
+              { key: "storyAutoArchive", label: sc.storyAutoArchive, defaultOn: true },
+              { key: "storyAllowNearby", label: sc.storyNearby, defaultOn: false },
             ]}
           />
         );
@@ -2120,11 +2183,13 @@ export function SettingsScreen() {
           <SimpleTogglePage
             title={sb.itemTags}
             onBack={onBack}
-            storageKey="linksy-settings-tags"
+            me={me}
+            onProfileUpdated={setMe}
+            onToast={showToast}
             items={[
-              { label: sc.tagsAllowPost },
-              { label: sc.tagsApproveFirst },
-              { label: sc.tagsAllowMentions },
+              { key: "tagsAllowPost", label: sc.tagsAllowPost, defaultOn: true },
+              { key: "tagsApproveFirst", label: sc.tagsApproveFirst, defaultOn: false },
+              { key: "tagsAllowMentions", label: sc.tagsAllowMentions, defaultOn: true },
             ]}
           />
         );
@@ -2133,11 +2198,13 @@ export function SettingsScreen() {
           <SimpleTogglePage
             title={sb.itemComments}
             onBack={onBack}
-            storageKey="linksy-settings-comments"
+            me={me}
+            onProfileUpdated={setMe}
+            onToast={showToast}
             items={[
-              { label: sc.commentsAllow },
-              { label: sc.commentsEveryone },
-              { label: sc.commentsFilter },
+              { key: "commentsAllow", label: sc.commentsAllow, defaultOn: true },
+              { key: "commentsFromEveryone", label: sc.commentsEveryone, defaultOn: true },
+              { key: "commentsFilterOffensive", label: sc.commentsFilter, defaultOn: true },
             ]}
           />
         );

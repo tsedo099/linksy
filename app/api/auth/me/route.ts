@@ -73,6 +73,7 @@ export const GET = withMetrics("/api/auth/me", async (req: NextRequest) => {
     quietHoursTimezone: true,
     birthDate: true,
     autoRevealAdultContent: true,
+    featurePrefs: true,
     isVerified: true,
     emailVerified: true,
     twoFactorEnabled: true,
@@ -257,6 +258,7 @@ export const PATCH = withMetrics("/api/auth/me", async (req: NextRequest) => {
     quietHoursTimezone?: string | null;
     birthDate?: Date | null;
     autoRevealAdultContent?: boolean;
+    featurePrefs?: Record<string, boolean | string | number>;
   } = {};
 
   if (body.displayName !== undefined) {
@@ -357,6 +359,20 @@ export const PATCH = withMetrics("/api/auth/me", async (req: NextRequest) => {
 
   if (body.autoRevealAdultContent !== undefined) {
     updateData.autoRevealAdultContent = Boolean(body.autoRevealAdultContent);
+  }
+
+  // featurePrefs: merge incoming partial into the existing JSON blob so
+  // the UI can patch one toggle at a time without sending the full set.
+  if (body.featurePrefs !== undefined && body.featurePrefs !== null && typeof body.featurePrefs === "object") {
+    const existing = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: { featurePrefs: true },
+    });
+    const merged: Record<string, unknown> = {
+      ...(existing?.featurePrefs as Record<string, unknown> | null ?? {}),
+      ...(body.featurePrefs as Record<string, unknown>),
+    };
+    updateData.featurePrefs = merged as typeof updateData.featurePrefs;
   }
 
   if (Object.keys(updateData).length === 0) {
