@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
+    "build": "prisma generate && next build",
+    "postinstall": "prisma generate",
     "start": "next start",
     "lint": "eslint .",
     "format": "prettier --write \"lib/**/*.test.ts\" \"tests/**/*.ts\" \"e2e/**/*.ts\" \"components/__tests__/**/*.tsx\" \"*.config.ts\" \"vitest.setup.ts\" \"playwright.config.ts\" \"eslint.config.mjs\" \".prettierrc.json\"",
@@ -22,7 +23,7 @@
     "size:why": "size-limit --why",
     "stories": "ladle serve",
     "stories:build": "ladle build",
-    "prepare": "husky"
+    "prepare": "husky || true"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
