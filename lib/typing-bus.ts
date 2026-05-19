@@ -37,8 +37,8 @@ class TypingBus {
     const url = process.env.REDIS_URL;
     if (!url) return;
     try {
-      this.pub = new Redis(url, { lazyConnect: true, enableOfflineQueue: false, maxRetriesPerRequest: 1 });
-      this.sub = new Redis(url, { lazyConnect: true, enableOfflineQueue: false, maxRetriesPerRequest: 1 });
+      this.pub = new Redis(url, { maxRetriesPerRequest: 2 });
+      this.sub = new Redis(url, { maxRetriesPerRequest: 2 });
       this.pub.on("error", () => { /* silent — Redis is optional */ });
       this.sub.on("error", () => { /* silent */ });
       this.sub.on("message", (channel, message) => {

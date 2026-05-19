@@ -7,7 +7,13 @@ export function getSharedRedis(): Redis | null {
   const url = process.env.REDIS_URL;
   if (!url) return null;
   try {
-    redis = new Redis(url, { lazyConnect: true, enableOfflineQueue: false, maxRetriesPerRequest: 1 });
+    // `lazyConnect: true` + `enableOfflineQueue: false` was a deadly combo:
+    // the first command (e.g. publish from a hot path) failed with
+    // "Stream isn't writeable" because the socket hadn't connected yet and
+    // the queue was disabled. Drop lazyConnect so ioredis dials eagerly;
+    // keep enableOfflineQueue on (the default) so any command issued during
+    // a reconnect waits instead of erroring out.
+    redis = new Redis(url, { maxRetriesPerRequest: 2 });
     redis.on("error", () => { /* silent — Redis is optional */ });
     return redis;
   } catch {
