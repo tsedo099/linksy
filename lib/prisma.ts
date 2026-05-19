@@ -19,11 +19,20 @@ function boolFromEnv(name: string): boolean {
  * small number per app instance (e.g. 5–10) and let PgBouncer multiplex.
  */
 function poolConfig() {
+  const url = process.env.DATABASE_URL!;
+  // Aiven / RDS / Supabase use a CA-signed certificate Node.js doesn't trust
+  // out of the box. `sslmode=require` only enables TLS; cert validation
+  // happens regardless and fails with "self-signed certificate in chain".
+  // Setting `ssl.rejectUnauthorized: false` mirrors libpq's `require` mode
+  // (encrypt the wire, skip chain validation) — same trade-off every
+  // managed-Postgres SDK takes by default.
+  const needsSsl = /sslmode=(require|prefer|verify-ca|verify-full)/i.test(url) || /aivencloud\.com|\.rds\.amazonaws\.com|supabase\.co/i.test(url);
   return {
-    connectionString: process.env.DATABASE_URL!,
+    connectionString: url,
     max: intFromEnv("DATABASE_POOL_MAX", 10),
     idleTimeoutMillis: intFromEnv("DATABASE_POOL_IDLE_TIMEOUT_MS", 30_000),
     connectionTimeoutMillis: intFromEnv("DATABASE_POOL_CONNECT_TIMEOUT_MS", 5_000),
+    ...(needsSsl ? { ssl: { rejectUnauthorized: false } as const } : {}),
   };
 }
 
