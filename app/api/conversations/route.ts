@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth";
-import { areUsersBlocked, getBlockedByMeIds } from "@/lib/user-blocks";
+import { areUsersBlocked, getBlockedByMeIds, getBlockedUserIds } from "@/lib/user-blocks";
 import { Prisma } from "@/lib/generated/prisma/client";
 import { parseRequestJsonAllowEmpty } from "@/lib/request-json";
 import { conversationCreateSchema } from "@/lib/schemas/api-bodies";

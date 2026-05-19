@@ -1285,11 +1285,17 @@ export function MessagesScreen() {
     ? convos.filter(c => c.isGroup)
     : requests;
 
+  // Muted convos contribute zero to the tab badges — the whole point of
+  // mute is "I don't want to be alerted by this thread". They still
+  // show their own per-row unread count so the user can scroll through
+  // and read, but they don't inflate the Direct / Groups badges.
   const tabUnreadCounts = useMemo(() => {
-    const direct = convos.reduce((sum, c) => sum + (!c.isGroup ? (c.unread ?? 0) : 0), 0);
-    const group = convos.reduce((sum, c) => sum + (c.isGroup ? (c.unread ?? 0) : 0), 0);
+    const unreadOf = (c: typeof convos[number]) =>
+      prefs[c.id]?.muted ? 0 : (c.unread ?? 0);
+    const direct = convos.reduce((sum, c) => sum + (!c.isGroup ? unreadOf(c) : 0), 0);
+    const group = convos.reduce((sum, c) => sum + (c.isGroup ? unreadOf(c) : 0), 0);
     return { direct, group, requests: requests.length };
-  }, [convos, requests]);
+  }, [convos, requests, prefs]);
 
   const filtered = tabList.filter(c =>
     !search
