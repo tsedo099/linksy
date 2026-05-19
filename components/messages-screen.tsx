@@ -196,6 +196,16 @@ export function MessagesScreen() {
     setNotice(message);
   }, []);
 
+  // Success toast — same notice slot as errors, auto-dismisses after 3s so
+  // the user gets a clear confirmation that an action (leave / add member /
+  // remove member) actually went through.
+  const noticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showSuccess = useCallback((message: string) => {
+    setNotice(message);
+    if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current);
+    noticeTimerRef.current = setTimeout(() => setNotice(null), 3000);
+  }, []);
+
   // Mirror late updates from the shared store into local `me` (avatar /
   // display-name swap, post-login hydration). myId is already derived
   // inline via `myIdLocal || storedUser?.id` so no extra wiring needed
@@ -1092,6 +1102,7 @@ export function MessagesScreen() {
         { method: "DELETE" },
       );
       if (!response.ok) throw new Error(await apiErrorMessage(response, "Could not remove member."));
+      showSuccess(language === "mn" ? "✓ Гишүүн хасагдлаа" : "✓ Member removed");
     } catch (error) {
       setConvos(previous);
       showError(error instanceof Error ? error.message : "Could not remove member.");
@@ -1443,6 +1454,7 @@ export function MessagesScreen() {
       setActiveId(null);
       setDetailOpen(false);
       if (window.innerWidth < 768) setMobileSide(true);
+      showSuccess(language === "mn" ? "✓ Бүлгээс гарлаа" : "✓ You left the group");
     } catch (error) {
       showError(error instanceof Error ? error.message : "Could not leave the group.");
     } finally {
@@ -2299,6 +2311,7 @@ export function MessagesScreen() {
                     onAdded={() => {
                       setAddPeopleOpen(false);
                       loadConvos();
+                      showSuccess(language === "mn" ? "✓ Гишүүн нэмэгдлээ" : "✓ Members added");
                     }}
                   />
                 ) : null}
