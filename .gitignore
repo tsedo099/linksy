@@ -36,3 +36,5 @@ Thumbs.db
 # The directory itself is kept (via .gitkeep) but uploaded files never enter the repo.
 public/uploads/*
 !public/uploads/.gitkeep
+
+.vercel

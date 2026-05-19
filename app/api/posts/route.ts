@@ -75,25 +75,31 @@ export const GET = withMetrics("/api/posts", async (req: NextRequest) => {
 
   const cursor = req.nextUrl.searchParams.get("cursor");
   const filter = req.nextUrl.searchParams.get("filter") ?? "all";
-  const blockedIds = await getBlockedUserIds(user.userId);
   const feedNow = new Date();
 
-  // Resolve the viewer's age policy once per request. Under-18 viewers never
-  // see `containsAdultContent` rows in any feed branch (creator / friends /
-  // close-circle / discover / all). Adult viewers see them inline — the gate
-  // only fires on direct messages, not feed surfaces.
+  // Fire the 4 independent lookups (blocked ids, viewer row, follows, close
+  // circle) in parallel. With Aiven/Vercel RTT in the 50–200ms range,
+  // serializing these added ~600ms to every feed load — now we pay the cost
+  // of the slowest single query, not the sum.
+  const [blockedIds, viewerRow, followingRows, circleRowsRaw] = await Promise.all([
+    getBlockedUserIds(user.userId),
+    prisma.user
+      .findUnique({ where: { id: user.userId }, select: { birthDate: true } })
+      .catch(() => null),
+    prisma.follow.findMany({
+      where: { followerId: user.userId },
+      select: { followingId: true },
+    }),
+    prisma.closeCircle.findMany({
+      where: { userId: user.userId },
+      select: { targetId: true },
+    }),
+  ]);
+
   let viewerUnder18 = false;
-  try {
-    const viewerRow = await prisma.user.findUnique({
-      where: { id: user.userId },
-      select: { birthDate: true },
-    });
-    if (viewerRow?.birthDate) {
-      const { isUnder18 } = await import("@/lib/age");
-      viewerUnder18 = isUnder18(viewerRow.birthDate);
-    }
-  } catch {
-    // Schema regression / legacy column missing → don't apply the filter.
+  if (viewerRow?.birthDate) {
+    const { isUnder18 } = await import("@/lib/age");
+    viewerUnder18 = isUnder18(viewerRow.birthDate);
   }
   const adultFeedFilter = viewerUnder18 ? { containsAdultContent: false } : {};
 
@@ -188,11 +194,9 @@ export const GET = withMetrics("/api/posts", async (req: NextRequest) => {
 
     const since = new Date(Date.now() - DISCOVER_MAX_AGE_MS);
 
-    const follows = await prisma.follow.findMany({
-      where: { followerId: user.userId },
-      select: { followingId: true },
-    });
-    const followingSet = new Set(follows.map((r) => r.followingId));
+    // followingRows was already fetched at the top in parallel with the
+    // other independent lookups — no need for another round trip.
+    const followingSet = new Set(followingRows.map((r) => r.followingId));
 
     const visibilityWhereDiscover: Prisma.PostWhereInput = {
       AND: [
@@ -292,18 +296,10 @@ export const GET = withMetrics("/api/posts", async (req: NextRequest) => {
   }
 
   // ── Regular feed ───────────────────────────────────────────────────────────
-  const following = await prisma.follow.findMany({
-    where: { followerId: user.userId },
-    select: { followingId: true },
-  });
+  // followingRows + circleRowsRaw were already fetched in parallel above.
   const blockedSet = new Set(blockedIds);
-  const followingIds = following.map((f) => f.followingId).filter((id) => !blockedSet.has(id));
-
-  const circleRows = await prisma.closeCircle.findMany({
-    where: { userId: user.userId },
-    select: { targetId: true },
-  });
-  const circleIds = circleRows.map((r) => r.targetId).filter((id) => !blockedSet.has(id));
+  const followingIds = followingRows.map((f) => f.followingId).filter((id) => !blockedSet.has(id));
+  const circleIds = circleRowsRaw.map((r) => r.targetId).filter((id) => !blockedSet.has(id));
 
   // Build where clause per filter
   const friendsAndSelf  = [...followingIds, user.userId];

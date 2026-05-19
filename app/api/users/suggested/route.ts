@@ -12,11 +12,13 @@ export async function GET(req: NextRequest) {
   const limitParam = req.nextUrl.searchParams.get("limit");
   const limit = Math.max(1, Math.min(50, Number.parseInt(limitParam ?? "20", 10) || 20));
 
-  const following = await prisma.follow.findMany({
-    where: { followerId: me.userId },
-    select: { followingId: true },
-  });
-  const blockedIds = await getBlockedUserIds(me.userId);
+  const [following, blockedIds] = await Promise.all([
+    prisma.follow.findMany({
+      where: { followerId: me.userId },
+      select: { followingId: true },
+    }),
+    getBlockedUserIds(me.userId),
+  ]);
   const excludedIds = [me.userId, ...blockedIds, ...following.map((f) => f.followingId)];
 
   const users = await prisma.user.findMany({

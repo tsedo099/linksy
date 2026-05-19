@@ -39,24 +39,15 @@ export async function GET(req: NextRequest) {
   const me = await getUser(req);
   if (!me) return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
   const now = new Date();
-  const blockedIds = await getBlockedUserIds(me.userId);
-  const blockedSet = new Set(blockedIds);
 
-  // Resolve viewer's age once per request; under-18 viewers never see adult-
-  // flagged stories in the ring feed.
-  let viewerUnder18 = false;
-  try {
-    const viewerRow = await prisma.user.findUnique({
-      where: { id: me.userId },
-      select: { birthDate: true },
-    });
-    if (viewerRow?.birthDate) viewerUnder18 = isUnder18(viewerRow.birthDate);
-  } catch {
-    // schema regression → no filter applied
-  }
-  const adultStoryFilter = viewerUnder18 ? { containsAdultContent: false } : {};
-
-  const [following, mutedStories] = await Promise.all([
+  // All 4 lookups are independent of each other — fire in parallel so the
+  // page-load critical path pays the latency of the slowest single query,
+  // not the sum.
+  const [blockedIds, viewerRow, following, mutedStories] = await Promise.all([
+    getBlockedUserIds(me.userId),
+    prisma.user
+      .findUnique({ where: { id: me.userId }, select: { birthDate: true } })
+      .catch(() => null),
     prisma.follow.findMany({
       where: { followerId: me.userId },
       select: { followingId: true },
@@ -66,6 +57,10 @@ export async function GET(req: NextRequest) {
       select: { mutedId: true },
     }),
   ]);
+
+  const blockedSet = new Set(blockedIds);
+  const viewerUnder18 = viewerRow?.birthDate ? isUnder18(viewerRow.birthDate) : false;
+  const adultStoryFilter = viewerUnder18 ? { containsAdultContent: false } : {};
   const mutedSet = new Set(mutedStories.map((row) => row.mutedId));
   const ids = following
     .map((f) => f.followingId)
