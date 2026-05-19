@@ -110,6 +110,7 @@ export function proxy(req: NextRequest) {
     pathname.startsWith("/api/v1") ||
     pathname.startsWith("/api/webhooks") ||
     pathname.startsWith("/api/keep-warm") ||
+    pathname.startsWith("/api/billing/status") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
     // Static user uploads served from `public/uploads/`. Next/Image internally

@@ -84,6 +84,17 @@ export function BillingScreen() {
   const [portalBusy, setPortalBusy] = useState(false);
   const [portalMessage, setPortalMessage] = useState<string | null>(null);
   const [quota, setQuota] = useState<Quota | null>(null);
+  // Set to false the moment we know Stripe isn't wired so we hide the
+  // upgrade CTAs (would 503 anyway). Loaded from /api/billing/status.
+  const [stripeConfigured, setStripeConfigured] = useState<boolean | null>(null);
+  useEffect(() => {
+    void fetch("/api/billing/status")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d: { configured?: boolean } | null) => {
+        setStripeConfigured(d?.configured ?? false);
+      })
+      .catch(() => setStripeConfigured(false));
+  }, []);
   // Re-render every 60s so the "Resets in Xh" copy stays current without
   // refetching the quota.
   const [, setTick] = useState(0);
@@ -247,12 +258,18 @@ export function BillingScreen() {
             <p className="legal-doc-label">{tier === "FREE" ? "Upgrade" : "Change plan"}</p>
             <div className="legal-doc-card">
               <div className="legal-doc-card-inner">
-                <p>See available plans and pricing tiers.</p>
-                <div className="billing-actions">
-                  <Link href="/pricing" className="auth-btn auth-btn--primary">
-                    {tier === "FREE" ? "View plans" : "Compare plans"}
-                  </Link>
-                </div>
+                {stripeConfigured === false ? (
+                  <p>Paid subscriptions are not enabled on this deployment yet. You can keep using all Free-tier features.</p>
+                ) : (
+                  <>
+                    <p>See available plans and pricing tiers.</p>
+                    <div className="billing-actions">
+                      <Link href="/pricing" className="auth-btn auth-btn--primary">
+                        {tier === "FREE" ? "View plans" : "Compare plans"}
+                      </Link>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </section>
