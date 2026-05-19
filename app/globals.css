@@ -9061,6 +9061,49 @@ html[data-theme="light"] .msg-hdr-blur { opacity: 0.07; }
   border-radius: 12px;
 }
 
+/* ── Mobile story viewer (≤768px) — full-screen native-app feel ─────────
+   The desktop card layout (centred 420×820 with gutter) looks tiny on
+   phones — wraps the photo in a small window with letterbox bars. Go
+   full-bleed on mobile so the story fills the viewport like Instagram /
+   Threads / Snapchat. Aspect-ratio is dropped so the height respects
+   100dvh + safe-area, and the rounded corners disappear (matches the
+   bezel). */
+@media (max-width: 768px) {
+  .sv-overlay--ig {
+    padding: 0;
+  }
+  .sv-stage--ig {
+    width: 100%;
+    height: 100dvh;
+    height: 100vh;
+    gap: 0;
+  }
+  .sv-card--ig {
+    width: 100vw;
+    height: 100dvh;
+    height: 100vh;
+    max-width: 100vw;
+    aspect-ratio: auto;
+    border-radius: 0;
+  }
+  /* Progress bar + header sit inside the safe-area inset so the notch /
+     Dynamic Island doesn't cover them. */
+  .sv-card--ig .sv-progress-row {
+    padding-top: max(0.6rem, env(safe-area-inset-top, 0px));
+  }
+  /* Close button — make it easier to hit + clear of the notch. */
+  .sv-global-close {
+    top: max(1rem, env(safe-area-inset-top, 0px));
+    right: 0.9rem;
+    padding: 0.5rem;
+  }
+  /* Bigger tap targets for the in-card nav arrows. */
+  .sv-story-nav {
+    width: 44px;
+    height: 44px;
+  }
+}
+
 /* Side cards — hidden on narrow screens */
 .sv-side-card {
   display: none;
