@@ -1,40 +1,45 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getSharedRedis } from "@/lib/redis";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 /**
- * Keep-warm probe for Neon Free tier. The compute auto-suspends after 5
- * minutes of inactivity, and the first request after a suspend pays a
- * 0.5–2s wake-up cost. Vercel cron pings this endpoint every 5 minutes
- * so the worst a real user experiences is the cron's own wake-up, not
- * theirs.
+ * Keep-warm probe for Neon Free tier + Redis health check.
  *
- * `SELECT 1` is the cheapest query that still goes through the connection
- * pool and the compute — anything that touches only the pooler (e.g. a
- * SHOW) wouldn't actually wake the suspended compute.
+ * Neon Free auto-suspends the compute after 5 minutes idle; the SELECT 1
+ * here wakes it. The Redis ping doubles as a diagnostic for whether
+ * REDIS_URL was actually picked up by this Vercel instance (sensitive
+ * env vars sometimes don't survive `vercel env pull` round trips).
  *
- * Public on purpose: the response leaks nothing, and rate-limiting a
- * 1-byte response would cost more than serving it.
+ * Public on purpose: response leaks nothing.
  */
 export async function GET() {
   const startedAt = Date.now();
+  const out: Record<string, unknown> = {
+    warmedAt: new Date().toISOString(),
+    redisConfigured: Boolean(process.env.REDIS_URL),
+  };
   try {
     await prisma.$queryRaw`SELECT 1`;
-    return NextResponse.json({
-      ok: true,
-      warmedAt: new Date().toISOString(),
-      ms: Date.now() - startedAt,
-    });
+    out.db = "ok";
   } catch (err) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: (err as Error).message?.slice(0, 200),
-        ms: Date.now() - startedAt,
-      },
-      { status: 503 },
-    );
+    out.db = "fail";
+    out.dbError = (err as Error).message?.slice(0, 200);
   }
+  const redis = getSharedRedis();
+  if (redis) {
+    try {
+      const pong = await redis.ping();
+      out.redis = pong === "PONG" ? "ok" : `unexpected:${pong}`;
+    } catch (err) {
+      out.redis = "fail";
+      out.redisError = (err as Error).message?.slice(0, 200);
+    }
+  } else {
+    out.redis = "no-client";
+  }
+  out.ms = Date.now() - startedAt;
+  return NextResponse.json(out, { status: out.db === "fail" ? 503 : 200 });
 }
