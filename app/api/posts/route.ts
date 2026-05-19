@@ -324,12 +324,15 @@ export const GET = withMetrics("/api/posts", async (req: NextRequest) => {
             { audience: "CLOSE_CIRCLE", authorId: { in: circleAndSelf  } },
           ],
         }
-      : /* "all" — FOR YOU: discover all public posts */
+      : /* "all" — FOR YOU: public + friends-of-mine. Close-circle posts
+           are intentionally EXCLUDED — they should only surface when the
+           viewer explicitly switches to the Close Circle filter. Previous
+           leak caused close-circle posts of people the viewer had added to
+           their own list to pop up on the main feed without consent. */
         {
           OR: [
             { audience: "PUBLIC" },
-            { audience: "FRIENDS",      authorId: { in: friendsAndSelf } },
-            { audience: "CLOSE_CIRCLE", authorId: { in: circleAndSelf  } },
+            { audience: "FRIENDS", authorId: { in: friendsAndSelf } },
           ],
         };
   const whereClause = {
