@@ -120,6 +120,20 @@ export function RegisterScreen() {
 
         <section className="login-panel">
           <div className="login-card">
+            <Link
+              href="/login"
+              className="ghost-link"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.4rem",
+                marginBottom: "0.8rem",
+                fontSize: "0.85rem",
+              }}
+              aria-label="Back to login"
+            >
+              ← {a.signInLink}
+            </Link>
             <div className="login-copy">
               <h2>{a.registerTitle}</h2>
             </div>
@@ -132,7 +146,6 @@ export function RegisterScreen() {
                     id="displayName"
                     autoComplete="name"
                     type="text"
-                    placeholder={a.displayNamePh}
                     {...register("displayName")}
                   />
                   <PersonIcon />
@@ -147,7 +160,6 @@ export function RegisterScreen() {
                     id="username"
                     autoComplete="username"
                     type="text"
-                    placeholder={a.usernamePh}
                     {...register("username")}
                   />
                   <AtIcon />
@@ -162,7 +174,6 @@ export function RegisterScreen() {
                     id="email"
                     autoComplete="email"
                     type="email"
-                    placeholder="name@example.com"
                     {...register("email")}
                   />
                   <MailIcon />
@@ -177,7 +188,6 @@ export function RegisterScreen() {
                     id="password"
                     autoComplete="new-password"
                     type={showPassword ? "text" : "password"}
-                    placeholder={fc.passwordHintRegister}
                     {...register("password")}
                   />
                   <button

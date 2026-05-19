@@ -1446,6 +1446,31 @@ html[data-theme="light"] .input-shell:focus-within {
   transform: none;
 }
 
+/* Native <select> inherits surface bg but the dropdown <option>s render with
+   browser-default white-on-white in dark mode, making text invisible. Pin
+   colour + background on both so the gender / language / etc. selectors
+   are readable in either theme. */
+.input-shell select {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--app-text);
+  border-radius: inherit;
+  padding: 0.65rem 0.95rem;
+  font: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.input-shell select option {
+  background: var(--app-card);
+  color: var(--app-text);
+}
+html[data-theme="light"] .input-shell select option {
+  background: #ffffff;
+  color: #0f172a;
+}
+
 .input-shell input {
   width: 100%;
   border: 0;
@@ -5506,7 +5531,9 @@ html[data-theme="light"] .post-media-wrap--uploaded {
   border: 0;
   padding: 3px;
   background: conic-gradient(from 210deg, #7c3aed, #c084fc, #22d3ee, #a78bfa, #7c3aed);
-  box-shadow: 0 0 16px rgba(124, 58, 237, 0.55), 0 0 32px rgba(34, 211, 238, 0.28);
+  /* No glow halo — keeps the ring crisp, matches the user's edit
+     across the home variant. */
+  box-shadow: none;
   position: relative;
   cursor: pointer;
   isolation: isolate;
@@ -12520,7 +12547,9 @@ body.feed-home-scroll-lock {
   height: 4.45rem;
   padding: 3px;
   background: conic-gradient(from 210deg, #7c3aed, #c084fc, #22d3ee, #a78bfa, #7c3aed);
-  box-shadow: 0 0 14px rgba(124, 58, 237, 0.55), 0 0 28px rgba(34, 211, 238, 0.28);
+  /* box-shadow glow dropped — was leaving a coloured aura around every
+     story avatar on /home that the user disliked. Conic gradient stays. */
+  box-shadow: none;
   animation: none;
 }
 

@@ -286,7 +286,6 @@ export function LoginScreen() {
                           id="email"
                           autoComplete="username"
                           type="text"
-                          placeholder={a.emailPh}
                           name={field.name}
                           ref={field.ref}
                           value={field.value ?? ""}
@@ -316,7 +315,6 @@ export function LoginScreen() {
                           id="password"
                           autoComplete="current-password"
                           type={showPassword ? "text" : "password"}
-                          placeholder={a.passwordPh}
                           name={field.name}
                           ref={field.ref}
                           value={field.value ?? ""}
