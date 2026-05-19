@@ -13163,18 +13163,11 @@ body.feed-home-scroll-lock {
     margin: 0 !important;
   }
 }
-/* Hide every floating overlay on /home — DM bubble, AI bubble, etc. The
-   `.feed-shell--home` prefix gives us higher specificity than the inline
-   <style> blocks those widgets emit. Bottom tabs are part of the shell,
-   not a widget, so they keep showing on mobile. */
-.feed-shell--home .ai-bubble,
-.feed-shell--home .ai-mini,
-.feed-shell--home .dm-widget,
-.feed-shell--home [class*="dmBubble"],
-.feed-shell--home [class*="ai-bubble"],
-.feed-shell--home [class*="aiBubble"] {
-  display: none !important;
-}
+/* On mobile /home the floating overlays would crowd the screen, but on
+   desktop the user explicitly asked for them back. The generic mobile
+   block (@media max-width:768px earlier in this file) already hides
+   them globally on phones, so /home gets the right behaviour without
+   blocking the desktop case. */
 /* Mobile top bar is now ALSO shown on /home (3.2rem). Default mobile
    shell already pushes .feed-main down by 3.2rem; we ALSO need to push
    the sticky filter strip down by the same amount so it lands directly
