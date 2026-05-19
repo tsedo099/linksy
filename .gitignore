@@ -17,6 +17,10 @@ next-dev-*.log
 .env.*.local
 !.env.example
 
+# Database dumps from one-off migrations — never commit
+*.dump
+*.sql.gz
+
 # Prisma generated client
 /lib/generated/prisma
 

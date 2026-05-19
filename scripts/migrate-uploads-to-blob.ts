@@ -22,7 +22,12 @@ if (!process.env.DATABASE_URL) {
   process.exit(1);
 }
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+// Aiven serves a CA-signed cert that Node.js doesn't trust out of the box —
+// mirror lib/prisma.ts's behaviour (encrypt the wire, skip chain validation).
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+});
 const prisma = new PrismaClient({ adapter });
 const UPLOADS_DIR = join(process.cwd(), "public", "uploads");
 const BLOB_PREFIX = "uploads/";
@@ -91,8 +96,32 @@ async function main(): Promise<void> {
     totalRows += user.count;
     const story = await prisma.story.updateMany({ where: { mediaUrl: oldUrl }, data: { mediaUrl: newUrl } });
     totalRows += story.count;
-    const msg = await prisma.message.updateMany({ where: { mediaUrl: oldUrl }, data: { mediaUrl: newUrl } });
-    totalRows += msg.count;
+    // Voice-message rows store the waveform amplitudes as a URL fragment:
+    //   `/uploads/<id>.webm#waveform=0.01,0.02,…`
+    // Exact-match updateMany would miss those, so pull each row, splice on
+    // the first `#`, and rewrite as `<newBlobUrl>#waveform=…`.
+    const exactMessages = await prisma.message.updateMany({
+      where: { mediaUrl: oldUrl },
+      data: { mediaUrl: newUrl },
+    });
+    totalRows += exactMessages.count;
+    const fragmentMessages = await prisma.message.findMany({
+      where: { mediaUrl: { startsWith: `${oldUrl}#` } },
+      select: { id: true, mediaUrl: true },
+    });
+    for (const m of fragmentMessages) {
+      const fragment = m.mediaUrl.slice(oldUrl.length);
+      await prisma.message.update({
+        where: { id: m.id },
+        data: { mediaUrl: `${newUrl}${fragment}` },
+      });
+      totalRows += 1;
+    }
+    // Call recordings (.webm / .mp4) — these were the source of the
+    // /uploads/...webm 404s after the cutover; users opt-in to record
+    // their voice/video calls and the URL lives on Call.recordingUrl.
+    const call = await prisma.call.updateMany({ where: { recordingUrl: oldUrl }, data: { recordingUrl: newUrl } });
+    totalRows += call.count;
     // Post media is stored as a String[] mediaUrls. Pull each row whose
     // array contains the old path, then write back the replaced array
     // — updateMany can't transform array elements directly.
@@ -105,9 +134,19 @@ async function main(): Promise<void> {
       await prisma.post.update({ where: { id: p.id }, data: { mediaUrls: updated } });
       totalRows += 1;
     }
+    // Drafts use the same array shape as Post.
+    const matchingDrafts = await prisma.draft.findMany({
+      where: { mediaUrls: { has: oldUrl } },
+      select: { id: true, mediaUrls: true },
+    });
+    for (const d of matchingDrafts) {
+      const updated = d.mediaUrls.map((u) => (u === oldUrl ? newUrl : u));
+      await prisma.draft.update({ where: { id: d.id }, data: { mediaUrls: updated } });
+      totalRows += 1;
+    }
   }
 
-  console.log(`\nDone. Updated ${totalRows} database row(s) across User.avatar, Post.mediaUrls, Story.media, Message.media.`);
+  console.log(`\nDone. Updated ${totalRows} database row(s) across User.avatar, Post.mediaUrls, Story.media, Message.media, Call.recording, Draft.mediaUrls.`);
   await prisma.$disconnect();
 }
 
