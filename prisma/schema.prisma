@@ -1,0 +1,1513 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum SubscriptionTier {
+  FREE
+  PRO
+}
+
+/** Mirrors Stripe `Subscription.status` (https://stripe.com/docs/api/subscriptions/object#subscription_object-status). */
+enum SubscriptionStatus {
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+  PAUSED
+}
+
+enum XPAction {
+  POST_CREATED
+  LIKE_RECEIVED
+  COMMENT_RECEIVED
+  DAILY_LOGIN
+  FOLLOW_RECEIVED
+}
+
+enum UnlockType {
+  BADGE
+  BORDER
+}
+
+enum EmailDigestCadence {
+  OFF
+  DAILY
+  WEEKLY
+}
+
+/**
+ * Self-declared gender, collected at signup. `UNDISCLOSED` is the privacy-safe
+ * default and is offered as "Prefer not to say" in the UI. We intentionally
+ * keep this list small — extending the enum is a migration, not a content
+ * decision the UI should make on its own.
+ */
+enum UserGender {
+  FEMALE
+  MALE
+  NON_BINARY
+  UNDISCLOSED
+}
+
+/**
+ * Platform role. `USER` is the default for every signup; `MODERATOR` /
+ * `ADMIN` are granted by an existing admin (or seeded via the bootstrap
+ * `SAFETY_ADMIN_USER_IDS` env). Used by `lib/admin-auth.ts:isSafetyAdmin`
+ * and the `app/admin/` route guard.
+ */
+enum UserRole {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+enum CommentModerationStatus {
+  APPROVED
+  PENDING
+  REJECTED
+}
+
+enum NotificationType {
+  like
+  comment
+  follow
+  mention
+  post_mention
+  story_mention
+  story
+  message
+  message_request
+  story_expiring
+  friend_joined
+  story_reaction
+  story_collab
+}
+
+enum PushPlatform {
+  WEB_PUSH
+  FCM
+  APNS
+}
+
+enum VerificationCategory {
+  CREATOR
+  BUSINESS
+  PUBLIC_FIGURE
+  GOVERNMENT
+  JOURNALIST
+  OTHER
+}
+
+enum VerificationRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum FeedbackCategory {
+  BUG
+  FEATURE_REQUEST
+  PRAISE
+  COMPLAINT
+  OTHER
+}
+
+enum FeedbackStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+  CLOSED
+}
+
+enum CallKind {
+  AUDIO
+  VIDEO
+}
+
+enum CallStatus {
+  /** Initiator created the call; recipients have not accepted/declined yet. */
+  RINGING
+  /** Initiator gave up before any acceptance. */
+  CANCELLED
+  /** Recipient(s) declined explicitly. */
+  DECLINED
+  /** No one accepted within the ringing window — server transitions automatically. */
+  MISSED
+  /** A recipient accepted; media session live. */
+  ACCEPTED
+  /** Call concluded after acceptance. */
+  ENDED
+}
+
+enum DisappearingMode {
+  /** Messages persist forever (default). */
+  OFF
+  /** `expiresAt = createdAt + expireAfterSeconds`. */
+  TIMED
+  /** `expiresAt = readAt + expireAfterSeconds` (set on first read). */
+  AFTER_READ
+}
+
+enum OAuthClientType {
+  CONFIDENTIAL
+  PUBLIC
+}
+
+enum OAuthTokenType {
+  ACCESS
+  REFRESH
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  email        String   @unique
+  /** Null for Google-only accounts until they set a password in settings. */
+  passwordHash String?
+  /** Google OAuth subject (`sub`); set when the user signs in or links Google. */
+  googleId     String?  @unique
+  displayName  String
+  bio          String?
+  avatarUrl    String?
+  preferredCategories String[] @default([])
+  showFollowers Boolean @default(true)
+  showFollowing Boolean @default(true)
+  allowMessageRequests Boolean @default(true)
+  allowGroupInvites Boolean @default(true)
+  allowStoryReplies Boolean @default(true)
+  /** Default for new posts: others may comment unless turned off here or per-post. */
+  defaultAllowComments Boolean @default(true)
+  /** Default for new posts: hide public like counts (author always sees counts). */
+  defaultHideLikes Boolean @default(false)
+  isVerified    Boolean  @default(false)
+  emailVerified Boolean  @default(false)
+  isPro         Boolean  @default(false)
+  deactivatedAt DateTime?
+  /**
+   * GDPR: user confirmed account deletion in settings. Row is purged after
+   * `GDPR_HARD_DELETE_GRACE_DAYS` (default 30) by `/api/cron/hard-delete-users`.
+   */
+  accountDeletionRequestedAt DateTime?
+  notificationPrefs Json?
+  emailDigest      EmailDigestCadence @default(OFF)
+  digestLastSentAt DateTime?
+  /** App UI + transactional email/Web Push locale (`en`,`mn`,`zh`,`ja`,`ko`,`ar`). */
+  preferredLanguage String @default("en")
+
+  /** Quiet hours window — minute-of-day (0..1439). Wraps midnight when start > end. */
+  quietHoursStart    Int?
+  quietHoursEnd      Int?
+  /** IANA timezone identifier the quiet-hours window is anchored to (e.g. `Asia/Ulaanbaatar`). */
+  quietHoursTimezone String?
+
+  twoFactorEnabled        Boolean @default(false)
+  twoFactorSecret         String?
+  pendingTwoFactorSecret  String?
+
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+
+  /**
+   * Self-declared gender. Collected at signup with `UNDISCLOSED` as the
+   * safe default (rendered as "Prefer not to say"). Never used for access
+   * control — only for product personalisation + analytics.
+   */
+  gender              UserGender @default(UNDISCLOSED)
+
+  /**
+   * Platform role. Defaults to `USER`. Admin panel + every `/api/admin/*`
+   * route gates on `role` being `MODERATOR` or `ADMIN`. Seeded from the
+   * legacy `SAFETY_ADMIN_USER_IDS` env in the role-column migration so
+   * existing admins keep their access after the upgrade.
+   */
+  role                UserRole   @default(USER)
+
+  /**
+   * Self-declared date of birth, collected at signup. Used solely to gate
+   * **adult-content exposure** in private messages — there is **no**
+   * minimum-age account-creation restriction.
+   *
+   * Semantics:
+   *   - `null` (legacy users who signed up before the field existed): treated
+   *     as an adult who has *not* opted out of the reveal prompt.
+   *   - Set and the resolved age is `< 18`: adult-content messages are
+   *     redacted server-side (the recipient sees a "restricted content"
+   *     placeholder, body is not delivered).
+   *   - Set and `>= 18`: confirm-then-reveal flow.
+   */
+  birthDate           DateTime?
+  /**
+   * Opt-in: hide the adult-content confirm dialog and just reveal automatically.
+   * Only honoured when `birthDate` resolves to an adult (or is unset). Defaults
+   * to false so the explicit consent step is on out of the box.
+   */
+  autoRevealAdultContent Boolean @default(false)
+
+  /**
+   * Account-level suspension applied by an admin. Server-side check at request
+   * time: when `suspendedUntil` is in the future, `lib/auth.ts:getUser` returns
+   * null so the user is treated as signed-out (read-only access to their own
+   * profile via the suspension banner). `null` past `suspendedUntil` is fine —
+   * the field is left in place for audit history.
+   *
+   * Set + cleared via `/api/admin/users/[id]/suspend`.
+   */
+  suspendedUntil    DateTime?
+  /** Short admin-supplied note shown to the user on the suspension banner. */
+  suspendedReason   String?
+  /** `User.id` of the admin who applied the most recent suspension. */
+  suspendedByUserId String?
+
+  /** Lifetime count of comment-safety warnings issued; reset to 0 when a ban is applied. */
+  commentWarnings   Int       @default(0)
+  /** When set and in the future, user is blocked from posting new comments. */
+  commentBanUntil   DateTime?
+  /** Most recent warning timestamp — surfaced in the Safe Social settings page. */
+  lastCommentWarningAt DateTime?
+
+  creatorMode      Boolean          @default(false)
+  creatorXP        Int              @default(0)
+  level            Int              @default(0)
+  subscriptionTier SubscriptionTier @default(FREE)
+  /** Stripe customer ID — set the first time a user is charged or opens the portal. */
+  stripeCustomerId String?          @unique
+  equippedBadge    String?
+  equippedBorder   String?
+  pinnedPostId     String?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  posts         Post[]         @relation("AuthorPosts")
+  pinnedPost   Post?         @relation("PinnedPost", fields: [pinnedPostId], references: [id], onDelete: SetNull)
+  stories       Story[]
+  storyHighlights StoryHighlight[]
+  storyViews    StoryView[]
+  storyReactions StoryReaction[]
+  storyCollaborations StoryCollaborator[]
+  postCollaborations PostCollaborator[]
+  likes         Like[]
+  comments      Comment[]
+  commentLikes  CommentLike[]
+  savedPosts    SavedPost[]
+  followers     Follow[]       @relation("Following")
+  following     Follow[]       @relation("Follower")
+  sentMessages      Message[]            @relation("Sender")
+  messageReactions  MessageReaction[]
+  pollVotes         PollVote[]
+  typingStates      ConversationTyping[]
+  conversations     ConversationMember[]
+  mentions          Mention[]
+  reposts           Repost[]
+  drafts            Draft[]
+  pinnedPosts       PinnedPost[]
+  twoFactorSecretRecord TwoFactorSecret?
+  auditLogs         AuditLog[]
+  notifications         Notification[]
+  notificationsTriggered Notification[] @relation("NotificationFrom")
+  closeCircle         CloseCircle[]  @relation("CloseCircleOwner")
+  inCloseCircleOf     CloseCircle[]  @relation("CloseCircleMember")
+  favorites           Favorite[]     @relation("FavoriteOwner")
+  favoritedBy         Favorite[]     @relation("FavoriteMember")
+  blockedUsers        UserBlock[]    @relation("UserBlockBlocker")
+  blockedBy           UserBlock[]    @relation("UserBlockBlocked")
+  mutes               Mute[]         @relation("MuteMuter")
+  mutedBy             Mute[]         @relation("MuteMuted")
+  reportsFiled        Report[]       @relation("ReportReporter")
+  xpLogs              XPLog[]
+  unlocks             Unlock[]
+  subscription        Subscription?
+  aiUsage             AiUsage[]
+  passwordResetTokens     PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
+  sessions                Session[]
+  webAuthnCredentials     WebAuthnCredential[]
+  oauthApplications       OAuthApplication[]
+  oauthConsents           OAuthConsent[]
+  oauthAuthorizationCodes OAuthAuthorizationCode[]
+  oauthTokens             OAuthToken[]
+  searchHistoryEntries    SearchHistory[]
+  pushSubscriptions       PushSubscription[]
+  postViews               PostView[]
+  postSeries              PostSeries[]
+  contactHashes           ContactHash[]
+  verificationRequests    VerificationRequest[] @relation("VerificationRequestUser")
+  verificationDecisions   VerificationRequest[] @relation("VerificationRequestDecider")
+  feedbackSubmissions     Feedback[]
+  callsInitiated          Call[]                @relation("CallInitiator")
+  callParticipations      CallParticipant[]     @relation("CallParticipantUser")
+  e2eeVerificationsOwned  E2EEVerification[]    @relation("E2EEVerificationOwner")
+  e2eeVerificationsPeer   E2EEVerification[]    @relation("E2EEVerificationPeer")
+  tipsSent                Tip[]                 @relation("TipSender")
+  tipsReceived            Tip[]                 @relation("TipRecipient")
+  e2eeIdentity            E2EEIdentity?
+  commentSafetyWarnings   CommentSafetyWarning[]
+
+  @@unique([pinnedPostId])
+  @@index([emailDigest, digestLastSentAt])
+  @@index([accountDeletionRequestedAt])
+}
+
+/**
+ * Records each automated safety warning issued for a user's comment.
+ * Three active (last 30 days) warnings trigger `User.commentBanUntil = now + 7d`.
+ */
+model CommentSafetyWarning {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /** Mirrors safety-moderation `ModerationFindingKind` (toxicity, spam, repetition, ...). */
+  kind         String
+  /** "LOW" | "MEDIUM" | "HIGH" | "CRITICAL". */
+  severity     String
+  /** Score 0..1 returned by scanText at issuance time. */
+  score        Float
+  /** Short human-readable reason shown in the Safe Social UI. */
+  reason       String
+  /** Trimmed comment text that triggered the warning (max ~500 chars). */
+  excerpt      String?
+  createdAt    DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model SearchHistory {
+  id         String   @id @default(cuid())
+  userId     String
+  query      String
+  searchedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, query])
+  @@index([userId, searchedAt])
+}
+
+model PushSubscription {
+  id        String       @id @default(cuid())
+  userId    String
+  platform  PushPlatform @default(WEB_PUSH)
+  /** Web Push endpoint URL (browser-supplied). NULL for native FCM/APNs rows. */
+  endpoint  String?      @db.Text
+  /** Web Push subscriber public key. NULL for native FCM/APNs rows. */
+  p256dh    String?      @db.Text
+  /** Web Push auth secret. NULL for native FCM/APNs rows. */
+  auth      String?      @db.Text
+  /** FCM registration token / APNs device token. NULL for WEB_PUSH rows. */
+  deviceToken String?    @db.Text
+  userAgent String?
+  createdAt DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, endpoint])
+  @@unique([userId, platform, deviceToken])
+  @@index([userId])
+  @@index([userId, platform])
+}
+
+model Session {
+  id           String    @id @default(cuid())
+  userId       String
+  userAgent    String?
+  ipAddress    String?
+  createdAt    DateTime  @default(now())
+  lastActiveAt DateTime  @default(now())
+  expiresAt    DateTime
+  revokedAt    DateTime?
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshToken RefreshToken?
+
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
+}
+
+model RefreshToken {
+  id         String    @id @default(cuid())
+  tokenHash  String    @unique
+  sessionId  String    @unique
+  session    Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([sessionId])
+}
+
+model WebAuthnCredential {
+  id           String    @id @default(cuid())
+  userId       String
+  credentialId String    @unique
+  publicKey    Bytes
+  counter      BigInt    @default(0)
+  transports   String[]  @default([])
+  aaguid       String?
+  name         String?
+  backedUp     Boolean   @default(false)
+  lastUsedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  revokedAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+  @@index([lastUsedAt])
+}
+
+model OAuthApplication {
+  id                String          @id @default(cuid())
+  ownerId           String
+  clientId          String          @unique
+  clientSecretHash  String?
+  clientType        OAuthClientType @default(CONFIDENTIAL)
+  name              String
+  description       String?
+  homepageUrl       String?
+  redirectUris      String[]        @default([])
+  scopes            String[]        @default([])
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  revokedAt         DateTime?
+
+  owner              User                     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  authorizationCodes OAuthAuthorizationCode[]
+  consents           OAuthConsent[]
+  tokens             OAuthToken[]
+
+  @@index([ownerId, revokedAt])
+}
+
+model OAuthConsent {
+  id            String    @id @default(cuid())
+  userId        String
+  applicationId String
+  scopes        String[]  @default([])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  revokedAt     DateTime?
+
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  application OAuthApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, applicationId])
+  @@index([applicationId, revokedAt])
+}
+
+model OAuthAuthorizationCode {
+  id                  String    @id @default(cuid())
+  codeHash            String    @unique
+  applicationId       String
+  userId              String
+  redirectUri         String
+  scopes              String[]  @default([])
+  codeChallenge       String?
+  codeChallengeMethod String?
+  expiresAt           DateTime
+  usedAt              DateTime?
+  createdAt           DateTime  @default(now())
+
+  application OAuthApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, expiresAt])
+  @@index([userId, createdAt])
+}
+
+model OAuthToken {
+  id                 String         @id @default(cuid())
+  tokenHash          String         @unique
+  refreshTokenHash   String?        @unique
+  type               OAuthTokenType @default(ACCESS)
+  applicationId      String
+  userId             String
+  scopes             String[]       @default([])
+  expiresAt          DateTime
+  revokedAt          DateTime?
+  createdAt          DateTime       @default(now())
+  lastUsedAt         DateTime?
+  parentRefreshTokenId String?
+  replacedByTokenId  String?        @unique
+
+  application OAuthApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, revokedAt])
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
+}
+
+model EmailVerificationToken {
+  token     String    @id
+  userId    String
+  email     String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model PasswordResetToken {
+  token     String    @id
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  authorId  String
+  mediaUrls String[]
+  /** Per mediaUrls[i]; same length as mediaUrls for new posts (accessibility). */
+  mediaAltTexts String[] @default([])
+  caption   String?
+  /** Detected or author-override BCP-47 tag (en, mn, ar, …) for direction/translate. */
+  captionLang String?
+  location  String?
+  /**
+   * Adult content flag. Set when the author explicitly toggles "contains adult
+   * content" on the composer OR the server-side keyword scorer in
+   * `lib/adult-content.ts` scores the caption above the threshold. Under-18
+   * viewers (per `User.birthDate`) never see flagged posts in the feed.
+   * Posting flagged content is blocked entirely when the author is under 18.
+   */
+  containsAdultContent Boolean @default(false)
+  category  String?
+  audience  String   @default("PUBLIC")
+  allowComments Boolean @default(true)
+  hideLikes     Boolean @default(false)
+  moderateComments Boolean @default(false)
+  isCreatorPost Boolean @default(false)
+  likeCount    Int     @default(0)
+  commentCount Int     @default(0)
+  scheduledAt  DateTime?
+  seriesId     String?
+  seriesPosition Int?
+  createdAt DateTime @default(now())
+
+  author        User           @relation("AuthorPosts", fields: [authorId], references: [id], onDelete: Cascade)
+  pinnedBy      User[]         @relation("PinnedPost")
+  likes         Like[]
+  comments      Comment[]
+  saved         SavedPost[]
+  notifications Notification[]
+  xpLogs        XPLog[]
+  hashtags      PostHashtag[]
+  mentions      Mention[]
+  reposts       Repost[]
+  pinnedEntries PinnedPost[]
+  poll          Poll?
+  postViews     PostView[]
+  collaborators PostCollaborator[]
+  series        PostSeries?      @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+
+  @@index([authorId, createdAt])
+  @@index([createdAt])
+  @@index([category, createdAt])
+  @@index([scheduledAt])
+  @@index([seriesId, seriesPosition])
+}
+
+model PostSeries {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  posts Post[]
+
+  @@index([userId, createdAt])
+}
+model PostCollaborator {
+  postId  String
+  userId  String
+  addedAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([postId, userId])
+  @@index([userId])
+}
+
+model Story {
+  id           String   @id @default(cuid())
+  authorId     String
+  mediaUrl     String
+  /** Short description for uploaded photo/video stories (not required for gradient-only). */
+  mediaAlt     String?
+  caption      String?
+  location     String?
+  musicTrack   Json?
+  playbackMode String   @default("NORMAL")
+  audience     String   @default("PUBLIC")
+  /** Adult content flag — same semantics as `Post.containsAdultContent`. Under-18 viewers won't see flagged stories; under-18 authors can't post them. */
+  containsAdultContent Boolean @default(false)
+  expiresAt    DateTime
+  expiryReminderSentAt DateTime?
+  createdAt    DateTime @default(now())
+
+  author User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  views  StoryView[]
+  highlightItems StoryHighlightItem[]
+  coverForHighlights StoryHighlight[] @relation("StoryHighlightCover")
+  mentions Mention[]
+  poll     Poll?
+  reactions StoryReaction[]
+  collaborators StoryCollaborator[]
+  notifications Notification[]
+
+  @@index([authorId, createdAt])
+  @@index([expiresAt])
+}
+
+model StoryCollaborator {
+  storyId String
+  userId  String
+  addedAt DateTime @default(now())
+
+  story Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([storyId, userId])
+  @@index([userId])
+}
+
+model StoryReaction {
+  userId    String
+  storyId   String
+  emoji     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  story Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@id([userId, storyId])
+  @@index([storyId])
+}
+
+model StoryView {
+  userId    String
+  storyId   String
+  viewedAt  DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  story Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@id([userId, storyId])
+  @@index([storyId, viewedAt])
+}
+
+model StoryHighlight {
+  id           String   @id @default(cuid())
+  userId       String
+  title        String
+  coverStoryId String?
+  coverUrl     String?
+  storyIds     String[] @default([])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coverStory Story?             @relation("StoryHighlightCover", fields: [coverStoryId], references: [id], onDelete: SetNull)
+  items     StoryHighlightItem[]
+
+  @@index([userId, createdAt])
+}
+
+model StoryHighlightItem {
+  highlightId String
+  storyId     String
+  addedAt     DateTime @default(now())
+
+  highlight StoryHighlight @relation(fields: [highlightId], references: [id], onDelete: Cascade)
+  story     Story          @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@id([highlightId, storyId])
+  @@index([storyId])
+}
+
+model Follow {
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model Like {
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([userId, postId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  postId    String
+  authorId  String
+  text      String
+  createdAt DateTime @default(now())
+  moderationStatus CommentModerationStatus @default(APPROVED)
+
+  post   Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  likes  CommentLike[]
+  mentions Mention[]
+
+  @@index([postId, createdAt])
+}
+
+model CommentLike {
+  userId    String
+  commentId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@id([userId, commentId])
+}
+
+model SavedPost {
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([userId, postId])
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  name      String?
+  isGroup   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /** Default disappearing-messages policy for newly sent messages in this conversation. */
+  disappearingMode    DisappearingMode @default(OFF)
+  /** TTL applied at send (TIMED) or first read (AFTER_READ). 60..604800 seconds. */
+  disappearingSeconds Int?
+
+  /** When true, messages must be E2EE-encrypted: server stores only ciphertext. */
+  e2eeEnabled         Boolean          @default(false)
+
+  members  ConversationMember[]
+  messages Message[]
+  typingStates ConversationTyping[]
+  calls    Call[]
+}
+
+model ConversationMember {
+  userId          String
+  conversationId  String
+  isRequest       Boolean @default(false)
+  pinnedMessageId String?
+  role            ConversationRole @default(MEMBER)
+  isBlocked       Boolean @default(false)
+  joinedAt        DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@id([userId, conversationId])
+  @@index([conversationId, role])
+}
+
+enum ConversationRole {
+  MEMBER
+  ADMIN
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  senderId       String
+  conversationId String
+  text           String
+  mediaUrl       String?
+  read           Boolean  @default(false)
+  readAt         DateTime?
+  createdAt      DateTime @default(now())
+  editedAt       DateTime?
+  deletedAt      DateTime?
+  replyToId      String?
+
+  /** Disappearing-message policy snapshot — copied from Conversation at send so retroactive policy changes don't reschedule old messages. */
+  expirePolicy       DisappearingMode?
+  /** TTL the policy was created with — preserved for analytics + recompute on first read. */
+  expireAfterSeconds Int?
+  /** Hard delete cutoff. NULL = persists forever. */
+  expiresAt          DateTime?
+
+  /** Base64 AES-GCM ciphertext blob (NULL when conversation is plaintext). */
+  ciphertext         String?            @db.Text
+  /** Per-message header — JSON containing ephemeral pub key, prekey id, IV, etc. */
+  ciphertextHeader   String?            @db.Text
+  /** Crypto suite identifier — e.g. `x3dh-aes-256-gcm-v1`. Lets us migrate suites later. */
+  encryptedKind      String?
+
+  /**
+   * Adult-content gate. Set when either (a) the sender explicitly toggled
+   * "contains adult content" on the composer, or (b) the server-side
+   * heuristic in `lib/adult-content.ts` scored the text above the threshold.
+   * Recipients under 18 don't receive the body; adult recipients see a
+   * confirm-before-reveal dialog (unless they've opted into auto-reveal).
+   * NULL on existing rows is treated as `false` (legacy).
+   */
+  containsAdultContent Boolean? @default(false)
+
+  sender       User         @relation("Sender", fields: [senderId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  reactions    MessageReaction[]
+  replyTo      Message?     @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies      Message[]    @relation("MessageReplies")
+
+  @@index([conversationId, createdAt])
+  @@index([replyToId])
+  @@index([expiresAt])
+}
+
+model Call {
+  id             String     @id @default(cuid())
+  conversationId String
+  initiatorId    String
+  kind           CallKind
+  status         CallStatus @default(RINGING)
+  /**
+   * `true` once group SFU rollout starts — direct WebRTC P2P is used when
+   * `false`. See `docs/group-calls-sfu.md` for the SFU integration plan.
+   */
+  isGroup        Boolean    @default(false)
+  /** SFU room handle (LiveKit/mediasoup). Empty until the call is upgraded to group. */
+  sfuRoomId      String?
+  /** When the initiator placed the call. */
+  startedAt      DateTime   @default(now())
+  /** When the first recipient picked up. */
+  acceptedAt     DateTime?
+  /** Final cleanup timestamp (cancel / decline / end / miss). */
+  endedAt        DateTime?
+  /** Duration between accepted → ended, persisted for analytics. */
+  durationSec    Int?
+
+  /** Uploaded recording asset URL (`/uploads/<id>.webm|mp4`); only set when a user opted in. */
+  recordingUrl         String?
+  /** MIME type the MediaRecorder produced. */
+  recordingMimeType    String?
+  /** Duration of the recorded portion (may be less than total call duration). */
+  recordingDurationSec Int?
+  /** Which participant captured the recording — recordings are local-stream-mixed on that device. */
+  recordedById         String?
+
+  conversation Conversation        @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  initiator    User                @relation("CallInitiator", fields: [initiatorId], references: [id], onDelete: Cascade)
+  participants CallParticipant[]
+
+  @@index([conversationId, startedAt])
+  @@index([initiatorId, startedAt])
+  @@index([status])
+}
+
+/**
+ * Per-user participation row for group calls. Direct 1:1 calls do not need
+ * rows here — the participants are derived from `initiatorId` and the
+ * conversation's two members. Group calls write a row per joining user.
+ */
+model CallParticipant {
+  callId    String
+  userId    String
+  joinedAt  DateTime  @default(now())
+  leftAt    DateTime?
+  /** Server-side SFU peer identifier (e.g. LiveKit participant SID). */
+  sfuPeerId String?
+
+  call Call @relation(fields: [callId], references: [id], onDelete: Cascade)
+  user User @relation("CallParticipantUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([callId, userId])
+  @@index([userId, joinedAt])
+}
+
+model ConversationTyping {
+  conversationId String
+  userId         String
+  expiresAt      DateTime
+  updatedAt      DateTime @updatedAt
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+  @@index([conversationId, expiresAt])
+}
+
+model MessageReaction {
+  messageId  String
+  userId     String
+  emoji      String
+  createdAt  DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([messageId, userId, emoji])
+  @@index([messageId])
+}
+
+model Poll {
+  id        String    @id @default(cuid())
+  postId    String?   @unique
+  storyId   String?   @unique
+  question  String
+  options   String[]
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+
+  post  Post?  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  story Story? @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  votes PollVote[]
+
+  @@index([createdAt])
+}
+
+model PollVote {
+  pollId       String
+  userId       String
+  optionIndex  Int
+  createdAt    DateTime @default(now())
+
+  poll Poll @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([pollId, userId])
+  @@index([pollId, optionIndex])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  action      String
+  targetType  String?
+  targetId    String?
+  ipAddress   String?
+  userAgent   String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  actor User? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([actorUserId, createdAt])
+  @@index([action, createdAt])
+}
+
+model TwoFactorSecret {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  secret      String
+  backupCodes String[] @default([])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Hashtag {
+  id        String        @id @default(cuid())
+  name      String        @unique
+  postCount Int           @default(0)
+  createdAt DateTime      @default(now())
+  posts     PostHashtag[]
+}
+
+/**
+ * Per-user long-term identity for E2EE DMs. Stores ONLY public material.
+ *
+ * `identitySigningKey` is an ECDSA P-256 SPKI used to verify the signed
+ * prekey signature. `identityExchangeKey` is an ECDH P-256 SPKI consumed by
+ * peers performing X3DH key agreement. Rotated when the user re-bootstraps
+ * (e.g. new device — old device's IndexedDB-stored private keys are gone).
+ */
+model E2EEIdentity {
+  userId                  String   @id
+  identitySigningKey      String   @db.Text
+  identityExchangeKey     String   @db.Text
+  signedPreKeyId          Int
+  signedPreKeyPublic      String   @db.Text
+  signedPreKeySignature   String   @db.Text
+  signedPreKeyCreatedAt   DateTime
+  updatedAt               DateTime @updatedAt
+
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  oneTimePreKeys E2EEOneTimePreKey[]
+  devices        E2EEDevice[]
+}
+
+/**
+ * Pool of single-use ECDH P-256 prekeys. Server hands one out per X3DH
+ * session and marks `consumedAt` so it's never reused. Client refreshes the
+ * pool when it falls below a threshold.
+ *
+ * Multi-device note: when `deviceId` is set, this prekey belongs to a specific
+ * device's keyring (so other devices' sessions don't consume it). Legacy
+ * single-device rows (deviceId = NULL) remain valid for backward compat —
+ * `consumeOneTimePreKey` on the server falls through to them when the device
+ * has none of its own.
+ */
+model E2EEOneTimePreKey {
+  id         String    @id @default(cuid())
+  userId     String
+  preKeyId   Int
+  publicKey  String    @db.Text
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+  deviceId   String?
+
+  identity E2EEIdentity @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  device   E2EEDevice?  @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, preKeyId])
+  @@index([userId, consumedAt])
+  @@index([deviceId, consumedAt])
+}
+
+/**
+ * Per-device identity bundle. A user with N installed devices (web, iOS,
+ * Android) publishes one row per device — each with its own ECDSA signing key,
+ * ECDH exchange key, signed pre-key, and one-time prekey pool. When User A
+ * sends a message to User B, the client fanout-encrypts once per recipient
+ * device (including A's other devices, so cross-device read state stays in
+ * sync).
+ *
+ * See [docs/e2ee-multi-device.md](docs/e2ee-multi-device.md) for the
+ * end-to-end protocol.
+ */
+/**
+ * Records that a user manually verified the safety number for a peer.
+ * `peerIdentityFingerprint` is the SHA-256 of the peer's identity signing
+ * key at the time of verification — server invalidates the row when the
+ * peer publishes a new identity key (fingerprint mismatch on read).
+ */
+model E2EEVerification {
+  userId                  String
+  peerUserId              String
+  peerIdentityFingerprint String   @db.Text
+  verifiedAt              DateTime @default(now())
+  /** Re-verification required when this is true (peer rotated their identity key). */
+  stale                   Boolean  @default(false)
+
+  user User @relation("E2EEVerificationOwner", fields: [userId], references: [id], onDelete: Cascade)
+  peer User @relation("E2EEVerificationPeer", fields: [peerUserId], references: [id], onDelete: Cascade)
+
+  @@id([userId, peerUserId])
+  @@index([peerUserId])
+}
+
+/**
+ * One-shot tip between two users (Stripe PaymentIntent fronted). `amount` is
+ * always in the smallest currency unit (e.g. cents for USD) per Stripe convention.
+ * `status` mirrors PaymentIntent state machine: PENDING → SUCCEEDED | FAILED | REFUNDED.
+ */
+model Tip {
+  id        String   @id @default(cuid())
+  fromId    String
+  toId      String
+  /** Smallest currency unit (cents). Stripe is the source of truth for the actual charge. */
+  amount    Int
+  currency  String   @default("USD")
+  message   String?
+  status    String   @default("PENDING")
+  stripePaymentIntentId String? @unique
+  createdAt DateTime @default(now())
+  /** When the PaymentIntent finalized (any terminal state). */
+  settledAt DateTime?
+
+  fromUser User @relation("TipSender", fields: [fromId], references: [id], onDelete: Cascade)
+  toUser   User @relation("TipRecipient", fields: [toId], references: [id], onDelete: Cascade)
+
+  @@index([toId, createdAt])
+  @@index([fromId, createdAt])
+  @@index([status])
+}
+
+model E2EEDevice {
+  id                    String   @id @default(cuid())
+  userId                String
+  /** Human-readable label shown in Settings → Devices (e.g. "Chrome on macOS"). */
+  label                 String
+  /** "WEB" | "IOS" | "ANDROID" | "DESKTOP" — opaque to the server. */
+  platform              String
+  identitySigningKey    String   @db.Text
+  identityExchangeKey   String   @db.Text
+  signedPreKeyId        Int
+  signedPreKeyPublic    String   @db.Text
+  signedPreKeySignature String   @db.Text
+  signedPreKeyCreatedAt DateTime
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  /** Set when the user revokes this device from Settings. Server refuses to hand out its keys. */
+  revokedAt             DateTime?
+
+  identity       E2EEIdentity        @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  oneTimePreKeys E2EEOneTimePreKey[]
+
+  @@index([userId, revokedAt])
+}
+
+model PostHashtag {
+  postId    String
+  hashtagId String
+
+  post    Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  hashtag Hashtag @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, hashtagId])
+  @@index([hashtagId])
+}
+
+model Mention {
+  id        String   @id @default(cuid())
+  postId    String?
+  commentId String?
+  storyId   String?
+  userId    String
+  createdAt DateTime @default(now())
+
+  post    Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  story   Story?   @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model PostView {
+  userId   String
+  postId   String
+  viewedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([userId, postId])
+  @@index([postId, viewedAt])
+}
+
+model Repost {
+  userId    String
+  postId    String
+  comment   String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([userId, postId])
+}
+
+model PinnedPost {
+  userId   String
+  postId   String
+  position Int      @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([userId, postId])
+  @@index([userId, position])
+}
+
+model Feedback {
+  id         String           @id @default(cuid())
+  userId     String
+  category   FeedbackCategory
+  message    String
+  /** Path the feedback was submitted from (`/home`, `/profile/foo`, …). */
+  contextUrl String?
+  userAgent  String?
+  /** Optional app build / commit SHA for correlating regressions. */
+  appVersion String?
+  status     FeedbackStatus   @default(OPEN)
+  createdAt  DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+}
+
+model VerificationRequest {
+  id             String                    @id @default(cuid())
+  userId         String
+  category       VerificationCategory
+  reason         String
+  /** Optional URLs (portfolio, official site, news article) supporting the claim. */
+  supportingUrls String[]                  @default([])
+  status         VerificationRequestStatus @default(PENDING)
+  submittedAt    DateTime                  @default(now())
+  decidedAt      DateTime?
+  decidedById    String?
+  decisionNote   String?
+
+  user      User  @relation("VerificationRequestUser", fields: [userId], references: [id], onDelete: Cascade)
+  decidedBy User? @relation("VerificationRequestDecider", fields: [decidedById], references: [id], onDelete: SetNull)
+
+  @@index([userId, status])
+  @@index([status, submittedAt])
+}
+
+model Draft {
+  id        String   @id @default(cuid())
+  authorId  String
+  caption   String?
+  mediaUrls String[]
+  mediaAltTexts String[] @default([])
+  audience  String   @default("PUBLIC")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model CloseCircle {
+  userId    String
+  targetId  String
+  createdAt DateTime @default(now())
+
+  user   User @relation("CloseCircleOwner",  fields: [userId],   references: [id], onDelete: Cascade)
+  target User @relation("CloseCircleMember", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@id([userId, targetId])
+}
+
+model Favorite {
+  userId    String
+  targetId  String
+  createdAt DateTime @default(now())
+
+  user   User @relation("FavoriteOwner",  fields: [userId],   references: [id], onDelete: Cascade)
+  target User @relation("FavoriteMember", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@id([userId, targetId])
+}
+
+model UserBlock {
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+
+  blocker User @relation("UserBlockBlocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked User @relation("UserBlockBlocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@id([blockerId, blockedId])
+  @@index([blockedId])
+}
+
+model Mute {
+  muterId            String
+  mutedId            String
+  mutePosts          Boolean  @default(true)
+  muteStories        Boolean  @default(true)
+  /** Hide in-app + push notifications from this user (messages / requests still allowed). */
+  muteNotifications  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  muter User @relation("MuteMuter", fields: [muterId], references: [id], onDelete: Cascade)
+  muted User @relation("MuteMuted", fields: [mutedId], references: [id], onDelete: Cascade)
+
+  @@id([muterId, mutedId])
+  @@index([mutedId])
+}
+
+model Report {
+  reporterId  String
+  targetType  String
+  targetId    String
+  reason      String
+  details     String?
+  status      String   @default("OPEN")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  reporter User @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@id([reporterId, targetType, targetId])
+  @@index([targetType, targetId])
+  @@index([status, createdAt])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  fromId    String
+  postId    String?
+  storyId   String?
+  /** Distinct actors in this grouped reaction (like/comment on same post), including `fromId`. */
+  groupCount   Int      @default(1)
+  /** Earlier actors in merge order; latest actor is always `fromId` (for avatars + copy). */
+  groupPeerIds String[] @default([])
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  from User  @relation("NotificationFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  post Post? @relation(fields: [postId], references: [id], onDelete: Cascade)
+  story Story? @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read, createdAt])
+}
+
+/// Hashed emails (or other identifiers) uploaded by a user to discover when friends register.
+model ContactHash {
+  id             String   @id @default(cuid())
+  ownerUserId    String
+  identifierHash String
+  createdAt      DateTime @default(now())
+
+  owner User @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerUserId, identifierHash])
+  @@index([identifierHash])
+}
+
+model XPLog {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String?
+  amount    Int
+  action    XPAction
+  sourceId  String?
+  createdAt DateTime @default(now())
+
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post? @relation(fields: [postId], references: [id], onDelete: Cascade)
+}
+
+model Unlock {
+  id     String     @id @default(cuid())
+  userId String
+  type   UnlockType
+  itemId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, itemId])
+}
+
+model Subscription {
+  id        String             @id @default(cuid())
+  userId    String             @unique
+  tier      SubscriptionTier
+  status    SubscriptionStatus @default(INCOMPLETE)
+  /** Mirror of `currentPeriodEnd` for tier-grant decisions. */
+  expiresAt DateTime?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  stripeCustomerId     String? @unique
+  stripeSubscriptionId String? @unique
+  stripePriceId        String?
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
+  canceledAt           DateTime?
+  trialEnd             DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+}
+
+/**
+ * Stripe-event idempotency log. Webhook handler inserts the event ID before
+ * processing; a unique-constraint conflict means the event was already handled.
+ */
+model ProcessedWebhookEvent {
+  /** Stripe event ID (`evt_...`). */
+  id          String   @id
+  type        String
+  processedAt DateTime @default(now())
+
+  @@index([processedAt])
+}
+
+/**
+ * Append-only log of every login attempt — successful or not — for
+ * rate-limiting forensics, account-takeover detection, and the
+ * "recent sign-ins" UI in account settings.
+ *
+ * `email` is stored lowercased as observed at the boundary (we *don't*
+ * resolve to userId because failed attempts may target non-existent
+ * accounts and we want to surface that pattern). For privacy, the row
+ * is purged 90 days after `attemptedAt` by the
+ * `prisma/migrations/.../login_attempt_retention` cron (see RUNBOOK).
+ */
+model LoginAttempt {
+  id          String   @id @default(cuid())
+  email       String
+  ipAddress   String?
+  /** "password" | "totp" | "passkey" | "backup_code" | "oauth_google" — opaque. */
+  channel     String   @default("password")
+  succeeded   Boolean
+  /** Short machine-readable reason on failure: "bad_password" | "no_user" | "locked" | "2fa_required" | "2fa_failed" | "rate_limited". `null` on success. */
+  failureReason String?
+  userAgent   String?
+  /** Populated only when authentication resolved to a real user (succeeded or known-email failure). */
+  userId      String?
+  attemptedAt DateTime @default(now())
+
+  @@index([email, attemptedAt])
+  @@index([ipAddress, attemptedAt])
+  @@index([userId, attemptedAt])
+  @@index([attemptedAt])
+}
+
+/**
+ * Daily AI request counter per user. Keyed by `(userId, day)` where `day` is a
+ * UTC `YYYY-MM-DD` string — keeps the table small (one row per user per day)
+ * and avoids timezone math at query time. Cleanup is best-effort; rows older
+ * than a couple of weeks can be pruned by a cron without affecting quota.
+ */
+model AiUsage {
+  userId String
+  day    String
+  count  Int    @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, day])
+  @@index([day])
+}

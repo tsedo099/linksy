@@ -1,0 +1,105 @@
+name: Load baseline (k6)
+
+# Nightly load test against staging. Also runnable on-demand for a
+# regression check before a risky deploy. The job never runs on PRs — it
+# would compete for staging resources and pollute timing data.
+
+on:
+  schedule:
+    - cron: "0 4 * * *"   # 04:00 UTC — after the nightly DB backup at 03:00
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Target URL (defaults to STAGING_URL secret)"
+        required: false
+        type: string
+      duration_minutes:
+        description: "Override total scenario duration (minutes)"
+        required: false
+        default: "3"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  # Only one load test against staging at a time — they interfere with each
+  # other's metrics, and the staging DB has a smaller connection pool.
+  group: load-baseline
+  cancel-in-progress: false
+
+jobs:
+  k6:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve target URL
+        id: target
+        run: |
+          target="${{ github.event.inputs.base_url }}"
+          if [ -z "$target" ]; then
+            target="${{ secrets.STAGING_URL }}"
+          fi
+          if [ -z "$target" ]; then
+            echo "::error::No target URL — set STAGING_URL secret or pass base_url"
+            exit 1
+          fi
+          echo "url=$target" >> "$GITHUB_OUTPUT"
+
+      - name: Materialise load-test fixtures
+        env:
+          USERS_CSV: ${{ secrets.LOAD_USERS_CSV }}
+        run: |
+          mkdir -p tests/load
+          if [ -n "$USERS_CSV" ]; then
+            printf '%s\n' "$USERS_CSV" > tests/load/users.csv
+            echo "Loaded $(($(wc -l < tests/load/users.csv) - 1)) test users"
+          else
+            # Minimum viable: a header-only CSV so the scenario gracefully
+            # short-circuits the auth flow instead of crashing.
+            echo "email,password" > tests/load/users.csv
+            echo "::warning::LOAD_USERS_CSV secret empty — auth scenario will skip"
+          fi
+
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg \
+            --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" \
+            | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install -y k6
+
+      - name: Smoke (health endpoints)
+        env:
+          BASE_URL: ${{ steps.target.outputs.url }}
+        run: k6 run --summary-export=smoke.json scripts/k6-health.js
+
+      - name: Baseline (auth + browse + post)
+        env:
+          BASE_URL: ${{ steps.target.outputs.url }}
+          LOAD_USERS_CSV: tests/load/users.csv
+        run: k6 run --summary-export=baseline.json scripts/k6-baseline.js
+
+      - name: Upload summaries
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-summaries-${{ github.run_id }}
+          path: |
+            smoke.json
+            baseline.json
+          retention-days: 30
+
+      - name: Notify on regression
+        if: failure() && env.SLACK_WEBHOOK_URL != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          curl -fsS -X POST "$SLACK_WEBHOOK_URL" \
+            -H 'Content-Type: application/json' \
+            -d "{\"text\":\":rotating_light: Load baseline regressed — <${RUN_URL}|view run>\"}"

@@ -1,0 +1,39 @@
+[
+  {
+    "name": "Initial JS — `/` route (entry + framework + main + app shell)",
+    "path": [
+      ".next/static/chunks/framework-*.js",
+      ".next/static/chunks/main-*.js",
+      ".next/static/chunks/main-app-*.js",
+      ".next/static/chunks/webpack-*.js"
+    ],
+    "limit": "260 KB",
+    "gzip": true
+  },
+  {
+    "name": "Feed route initial JS",
+    "path": [
+      ".next/static/chunks/app/home/page-*.js",
+      ".next/static/chunks/app/home/layout-*.js"
+    ],
+    "limit": "120 KB",
+    "gzip": true
+  },
+  {
+    "name": "Login + Register routes initial JS",
+    "path": [
+      ".next/static/chunks/app/auth/**/page-*.js"
+    ],
+    "limit": "60 KB",
+    "gzip": true
+  },
+  {
+    "name": "Common shared chunks (sentry, react-dom, prisma client)",
+    "path": [
+      ".next/static/chunks/[0-9]*.js",
+      ".next/static/chunks/[a-f0-9][a-f0-9][a-f0-9][a-f0-9]*.js"
+    ],
+    "limit": "400 KB",
+    "gzip": true
+  }
+]

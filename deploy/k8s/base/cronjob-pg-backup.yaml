@@ -1,0 +1,72 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: linksy-pg-backup
+  labels:
+    app.kubernetes.io/name: linksy
+    app.kubernetes.io/component: pg-backup
+spec:
+  # 03:00 UTC daily. Off-peak for both EU and APAC.
+  schedule: "0 3 * * *"
+  timeZone: "UTC"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 7
+  failedJobsHistoryLimit: 14
+  startingDeadlineSeconds: 1800
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 7200
+      template:
+        spec:
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 70    # postgres uid in the official image
+            fsGroup: 70
+          containers:
+            - name: pg-backup
+              image: ghcr.io/your-org/linksy-pg-backup:CHANGE_ME
+              # Image expectations:
+              #   - bundles `pg_dump`, `aws`, `gpg`, the script at /opt/bin/pg-backup.sh
+              #   - WORKDIR=/tmp (writable emptyDir mounted below)
+              command: ["/opt/bin/pg-backup.sh"]
+              env:
+                - name: BACKUP_DIR
+                  value: /backup
+                - name: RETAIN_DAYS
+                  value: "14"
+                - name: S3_PREFIX
+                  value: pg
+                - name: PG_DUMP_JOBS
+                  value: "2"
+              envFrom:
+                - secretRef:
+                    name: linksy-backup-secrets   # DATABASE_URL, GPG_RECIPIENT, AWS_*, S3_BUCKET
+              resources:
+                requests:
+                  cpu: 200m
+                  memory: 512Mi
+                limits:
+                  cpu: "2"
+                  memory: 2Gi
+              volumeMounts:
+                - name: backup
+                  mountPath: /backup
+                - name: gnupg
+                  mountPath: /home/postgres/.gnupg
+                  readOnly: true
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+          volumes:
+            - name: backup
+              emptyDir:
+                sizeLimit: 20Gi
+            # GPG public keyring (no private keys here) for asymmetric encryption.
+            - name: gnupg
+              secret:
+                secretName: linksy-backup-gnupg
+                defaultMode: 0400

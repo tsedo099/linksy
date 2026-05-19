@@ -1,0 +1,47 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: linksy-staging
+nameSuffix: -staging
+
+resources:
+  - ../../base
+
+# Staging mirrors prod shape but at half the headroom and with Stripe test mode.
+patches:
+  - target:
+      kind: Deployment
+      name: linksy-web
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 2
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: linksy-web
+    patch: |
+      - op: replace
+        path: /spec/minReplicas
+        value: 2
+      - op: replace
+        path: /spec/maxReplicas
+        value: 6
+  - target:
+      kind: Ingress
+      name: linksy-web
+    patch: |
+      - op: replace
+        path: /spec/rules/0/host
+        value: staging.linksy.example.com
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: staging.linksy.example.com
+
+configMapGenerator:
+  - name: linksy-config
+    behavior: merge
+    literals:
+      - NEXT_PUBLIC_SITE_URL=https://staging.linksy.example.com
+      - SENTRY_ENVIRONMENT=staging
+      - STRIPE_LIVE_MODE=false
+      - LOG_LEVEL=info

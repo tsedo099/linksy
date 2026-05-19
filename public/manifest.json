@@ -1,0 +1,55 @@
+{
+  "name": "Linksy",
+  "short_name": "Linksy",
+  "description": "A modern social media web app with personalized themes.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#05030b",
+  "theme_color": "#7c3aed",
+  "categories": ["social", "lifestyle"],
+  "lang": "en",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/psda.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/psda.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Home feed",
+      "short_name": "Feed",
+      "url": "/home",
+      "description": "Open the main feed"
+    },
+    {
+      "name": "Messages",
+      "short_name": "DMs",
+      "url": "/messages",
+      "description": "Open direct messages"
+    },
+    {
+      "name": "Notifications",
+      "short_name": "Inbox",
+      "url": "/notifications",
+      "description": "Open notifications"
+    },
+    {
+      "name": "Create post",
+      "short_name": "Create",
+      "url": "/create",
+      "description": "Compose a new post"
+    }
+  ],
+  "prefer_related_applications": false
+}

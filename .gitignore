@@ -1,0 +1,38 @@
+.next
+node_modules
+
+# Logs (anywhere in the tree)
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+dev-server.log
+dev-server.err.log
+next-dev-*.log
+
+# Local env
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Prisma generated client
+/lib/generated/prisma
+
+# Test output
+coverage
+playwright-report
+test-results
+
+# Editor / OS junk
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# User-uploaded content (UPLOAD_STORAGE=local mode writes here for dev).
+# In production set UPLOAD_STORAGE=s3 or vercel_blob — see lib/uploads-storage.ts.
+# The directory itself is kept (via .gitkeep) but uploaded files never enter the repo.
+public/uploads/*
+!public/uploads/.gitkeep

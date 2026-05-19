@@ -1,0 +1,50 @@
+# Dependencies & build artifacts
+node_modules
+.next
+out
+dist
+build
+
+# VCS
+.git
+.gitignore
+.gitattributes
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+dev-server.log
+dev-server.err.log
+next-dev-*.log
+
+# Local env (build args supply prod values)
+.env
+.env.*
+!.env.example
+
+# Tests / coverage / playwright
+coverage
+playwright-report
+test-results
+__tests__
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+
+# Docs & markdown (re-include licence)
+*.md
+!LICENSE
+!LICENSE.md
+
+# Editor / OS junk
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Local Prisma generated client (built inside image)
+lib/generated/prisma

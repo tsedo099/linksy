@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+
+# Run prettier + eslint on staged files (fast — only touched files).
+npx lint-staged || exit 1
+
+# If any .ts / .tsx file was staged, run a project-wide typecheck.
+# tsc cannot type-check individual files in a project context, so this is the
+# safest gate against shipping a type error.
+if git diff --cached --name-only --diff-filter=ACMR | grep -q -E '\.(ts|tsx)$'; then
+  echo "→ Running typecheck (staged TS/TSX changes detected)…"
+  npm run typecheck || {
+    echo ""
+    echo "✗ typecheck failed. Fix the errors above before committing."
+    echo "  (To bypass for an emergency hotfix: git commit --no-verify — but you owe a follow-up PR.)"
+    exit 1
+  }
+fi

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: linksy-config
+  labels:
+    app.kubernetes.io/name: linksy
+data:
+  # Non-secret runtime settings. Overlays override per environment.
+  NEXT_PUBLIC_APP_NAME: "Linksy"
+  NEXT_PUBLIC_DEFAULT_LANGUAGE: "en"
+  NEXT_PUBLIC_SITE_URL: "https://linksy.example.com"
+  LOG_LEVEL: "info"
+  # Stripe + Sentry environment labels — not secrets themselves.
+  STRIPE_LIVE_MODE: "true"
+  SENTRY_ENVIRONMENT: "production"
+  # SMTP / push transport identifiers (creds live in the Secret).
+  EMAIL_FROM: "noreply@linksy.example.com"

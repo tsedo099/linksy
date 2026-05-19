@@ -1,0 +1,15 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: linksy-web
+  labels:
+    app.kubernetes.io/name: linksy
+    app.kubernetes.io/component: web
+spec:
+  # Always keep at least one web pod available during voluntary disruptions
+  # (node drains, rolling node-pool updates). HPA still scales freely.
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: linksy
+      app.kubernetes.io/component: web

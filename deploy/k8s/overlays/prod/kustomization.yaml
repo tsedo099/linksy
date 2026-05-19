@@ -1,0 +1,32 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: linksy-prod
+
+resources:
+  - ../../base
+
+# Prod runs the base values (replicas: 2, HPA 2→12). Override here only when
+# the prod cluster diverges from base (e.g., different ingress class, custom
+# resource ceilings). Keep this overlay minimal so base is the source of truth.
+
+patches:
+  - target:
+      kind: Ingress
+      name: linksy-web
+    patch: |
+      - op: replace
+        path: /spec/rules/0/host
+        value: linksy.example.com
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: linksy.example.com
+
+configMapGenerator:
+  - name: linksy-config
+    behavior: merge
+    literals:
+      - NEXT_PUBLIC_SITE_URL=https://linksy.example.com
+      - SENTRY_ENVIRONMENT=production
+      - STRIPE_LIVE_MODE=true
+      - LOG_LEVEL=info

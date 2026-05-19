@@ -1,0 +1,44 @@
+/*
+ * Tailwind v4 scaffold (Phase 1 of the CSS roadmap in PROJECT_GAPS_AUDIT.md).
+ *
+ * We map the existing `--app-*` CSS custom properties into Tailwind theme
+ * tokens so new code can write `bg-card` / `text-app` / `border-app` etc.
+ * and instantly inherit theme + accent switching that `globals.css` already
+ * drives via `data-theme` / `data-accent` attribute selectors.
+ *
+ * Order: import Tailwind first so `@theme` is recognised, then the existing
+ * `globals.css` so its rules still cascade. The two files coexist while
+ * we strangler-pattern the migration; no rule in `globals.css` should be
+ * deleted until its consumers have moved to a Tailwind utility.
+ */
+@import "tailwindcss";
+
+@theme {
+  --color-app-background: var(--app-background);
+  --color-app-card: var(--app-card);
+  --color-app-card-elevated: var(--app-card-elevated);
+  --color-app-card-soft: var(--app-card-soft);
+  --color-app-card-strong: var(--app-card-strong);
+  --color-app-text: var(--app-text);
+  --color-app-text-muted: var(--app-text-muted);
+  --color-app-icon: var(--app-icon);
+  --color-app-icon-hover: var(--app-icon-hover);
+  --color-app-border: var(--app-border);
+  --color-app-accent: var(--app-accent);
+  --color-app-accent-secondary: var(--app-accent-secondary);
+
+  --font-headline: var(--font-headline), sans-serif;
+
+  --radius-card: 1.4rem;
+  --radius-pill: 999px;
+}
+
+/*
+ * Source globs. Tailwind v4 auto-discovers but the explicit `@source`
+ * directive prevents accidental scanning of generated / vendored code.
+ */
+@source "../../app/**/*.{ts,tsx}";
+@source "../../components/**/*.{ts,tsx}";
+@source "!../../node_modules";
+@source "!../../.next";
+@source "!../../lib/generated";

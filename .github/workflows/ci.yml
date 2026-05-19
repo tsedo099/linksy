@@ -1,0 +1,119 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci
+      # Separate database used by `prisma migrate dev`-style tooling to detect
+      # drift / unsafe schema operations without polluting the main DB.
+      SHADOW_DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci_shadow
+      JWT_SECRET: ci-build-only-not-for-production
+      NEXT_TELEMETRY_DISABLED: "1"
+      # Sentry release identifier — tag each build with the immutable commit
+      # SHA so `release:` in `sentry.*.config.ts` matches the maps the webpack
+      # plugin uploads. Source-map upload + release create only fires when the
+      # auth token is present, i.e. on push events to main (not on PRs).
+      SENTRY_RELEASE: ${{ github.sha }}
+      SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+      SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+      SENTRY_AUTH_TOKEN: ${{ github.event_name == 'push' && secrets.SENTRY_AUTH_TOKEN || '' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Prisma generate
+        run: npx prisma generate
+
+      - name: Create shadow database
+        run: |
+          PGPASSWORD=ci psql -h 127.0.0.1 -U ci -d postgres \
+            -c "CREATE DATABASE ci_shadow;"
+
+      - name: Apply migrations to primary DB
+        run: npx prisma migrate deploy
+
+      - name: Validate migrations against shadow DB (drift / non-replayable check)
+        # Replays every migration into a clean shadow DB. Fails on missing-down,
+        # unsafe NOT NULL adds without backfill, or schema drift between
+        # `schema.prisma` and committed migrations.
+        run: |
+          DATABASE_URL="$SHADOW_DATABASE_URL" npx prisma migrate deploy
+          npx prisma migrate diff \
+            --from-migrations prisma/migrations \
+            --to-schema-datamodel prisma/schema.prisma \
+            --shadow-database-url "$SHADOW_DATABASE_URL" \
+            --exit-code
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Format (tests & config)
+        run: npm run format:check
+
+      - name: Unit + integration tests + coverage
+        run: npm run test:coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+          fail_ci_if_error: false
+
+      - name: Build
+        run: npm run build
+
+      - name: Bundle size budget
+        # Hard CI gate. Limits live in `.size-limit.json`; raising a budget
+        # requires a one-line PR review so the team sees the regression
+        # before it ships. Use `npm run size:why` locally to inspect what
+        # added bytes when this fails.
+        run: npm run size
+
+      - name: Seed database (Playwright fixtures)
+        run: npm run seed
+
+      - name: Install Playwright (Chromium)
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E
+        run: npm run test:e2e

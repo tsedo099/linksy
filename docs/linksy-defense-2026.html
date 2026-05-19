@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="mn">
+<head>
+  <meta charset="utf-8" />
+  <title>Linksy — Дипломын хамгаалалт 2026</title>
+  <style>
+    @page { size: A4 landscape; margin: 12mm; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #05030b;
+      color: #f5edff;
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.5;
+    }
+    .page {
+      min-height: 186mm;
+      padding: 22mm 28mm 18mm;
+      page-break-after: always;
+      background:
+        radial-gradient(circle at 88% 8%, rgba(124,58,237,0.32), transparent 50mm),
+        radial-gradient(circle at 8% 92%, rgba(192,132,252,0.18), transparent 55mm),
+        linear-gradient(180deg, #0b0615 0%, #05030b 100%);
+      border: 1px solid rgba(167,139,250,0.18);
+      display: flex; flex-direction: column;
+      position: relative;
+    }
+    .page:last-child { page-break-after: auto; }
+
+    /* ── Cover slide ── */
+    .cover { justify-content: center; align-items: flex-start; gap: 28px; }
+    .cover-eyebrow {
+      font-size: 13pt; letter-spacing: 0.36em;
+      text-transform: uppercase; color: #c4b5fd;
+    }
+    .cover h1 {
+      font-size: 96pt; margin: 0; letter-spacing: -0.05em; line-height: 0.9;
+      background: linear-gradient(120deg, #ffffff 0%, #c4b5fd 60%, #a855f7 100%);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .cover h2 {
+      font-size: 24pt; font-weight: 600; color: #e9d5ff;
+      margin: 0; max-width: 720px;
+    }
+    .cover-meta {
+      margin-top: 40px; font-size: 12pt; color: #b8abc9; line-height: 2;
+    }
+    .cover-meta strong { color: #f5edff; font-weight: 700; margin-right: 8px; }
+
+    /* ── Standard slide layout ── */
+    .slide-num {
+      font-size: 11pt; color: #6b5d8a;
+      letter-spacing: 0.3em; text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    h2.section {
+      font-size: 36pt; margin: 0 0 24px; letter-spacing: -0.02em;
+      background: linear-gradient(120deg, #f5edff, #c4b5fd);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.05;
+    }
+
+    /* ── Bullets (talking points, short) ── */
+    ul.points { padding: 0; margin: 8px 0; list-style: none; }
+    ul.points li {
+      font-size: 18pt; color: #ede9fe; padding: 12px 0;
+      border-bottom: 1px solid rgba(168,85,247,0.18);
+      display: flex; align-items: center; gap: 16px;
+    }
+    ul.points li::before {
+      content: ""; flex-shrink: 0;
+      width: 10px; height: 10px; border-radius: 50%;
+      background: linear-gradient(135deg, #a855f7, #6366f1);
+    }
+    ul.points li strong { color: #ffffff; }
+
+    /* ── Big metric tiles ── */
+    .metrics {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 16px; margin: 20px 0;
+    }
+    .metric {
+      background: linear-gradient(135deg, rgba(124,58,237,0.22), rgba(168,85,247,0.06));
+      border: 1px solid rgba(168,85,247,0.4);
+      border-radius: 18px; padding: 22px 16px;
+      text-align: center;
+    }
+    .metric-num {
+      font-size: 44pt; font-weight: 800; color: #ffffff;
+      letter-spacing: -0.03em; line-height: 1;
+    }
+    .metric-lbl {
+      font-size: 11pt; color: #c4b5fd; margin-top: 8px;
+      letter-spacing: 0.12em; text-transform: uppercase;
+    }
+
+    /* ── Feature card grid ── */
+    .cards-3 {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 18px; margin: 10px 0;
+    }
+    .cards-2 {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 18px; margin: 10px 0;
+    }
+    .card {
+      background: rgba(124,58,237,0.08);
+      border: 1px solid rgba(167,139,250,0.28);
+      border-radius: 16px;
+      padding: 20px 22px;
+    }
+    .card-icon {
+      font-size: 26pt; margin-bottom: 6px; display: block;
+      filter: grayscale(0.2);
+    }
+    .card h3 {
+      margin: 0 0 6px; font-size: 16pt; color: #ffffff;
+    }
+    .card p {
+      margin: 0; font-size: 12pt; color: #ddd6fe; line-height: 1.5;
+    }
+
+    /* ── Tech pills ── */
+    .pills {
+      display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 18px;
+    }
+    .pill {
+      padding: 8px 16px; border-radius: 999px;
+      background: rgba(168,85,247,0.18);
+      border: 1px solid rgba(168,85,247,0.38);
+      font-size: 13pt; color: #f5edff; font-weight: 600;
+    }
+    .tech-row { margin-bottom: 14px; }
+    .tech-row > h3 {
+      margin: 0 0 4px; font-size: 13pt; color: #c4b5fd;
+      letter-spacing: 0.18em; text-transform: uppercase;
+    }
+
+    /* ── Pipeline flow ── */
+    .pipeline {
+      display: grid; grid-template-columns: repeat(5, 1fr);
+      gap: 10px; align-items: center;
+      margin: 24px 0;
+    }
+    .step {
+      background: rgba(15,8,28,0.7);
+      border: 1px solid rgba(167,139,250,0.32);
+      border-radius: 14px; padding: 16px 12px;
+      text-align: center;
+    }
+    .step-num {
+      font-size: 11pt; color: #a855f7; font-weight: 800;
+      letter-spacing: 0.18em;
+    }
+    .step-name {
+      font-size: 13pt; font-weight: 700; color: #ffffff;
+      margin: 6px 0 4px;
+    }
+    .step-detail { font-size: 10pt; color: #b8abc9; line-height: 1.4; }
+    .step-arrow {
+      font-size: 22pt; color: #a855f7; text-align: center;
+    }
+
+    /* ── Speaker tag (small hint at bottom) ── */
+    .speaker {
+      margin-top: auto; padding-top: 16px;
+      border-top: 1px dashed rgba(168,85,247,0.25);
+      font-size: 10pt; color: #8b7aa8; font-style: italic;
+      letter-spacing: 0.03em;
+    }
+    .speaker::before {
+      content: "▸ ярих:"; color: #a855f7;
+      font-style: normal; font-weight: 700;
+      letter-spacing: 0.16em; margin-right: 10px;
+    }
+
+    /* ── Big headline section (for opener slides) ── */
+    .hero-head {
+      font-size: 52pt; line-height: 1.05; margin: 30px 0 14px;
+      letter-spacing: -0.03em;
+      background: linear-gradient(120deg, #ffffff 0%, #c4b5fd 100%);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero-sub { font-size: 20pt; color: #ddd6fe; max-width: 720px; }
+
+    /* ── Quote / callout ── */
+    .quote {
+      background: linear-gradient(135deg, rgba(124,58,237,0.16), rgba(99,102,241,0.06));
+      border-left: 4px solid #a855f7;
+      padding: 18px 24px; margin: 20px 0;
+      font-size: 15pt; color: #f5edff;
+      border-radius: 0 12px 12px 0;
+    }
+
+    .footer-mark {
+      position: absolute; bottom: 8mm; right: 22mm;
+      font-size: 9pt; color: #6b5d8a;
+      letter-spacing: 0.22em; text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─────────── 1. Cover ─────────── -->
+<section class="page cover">
+  <span class="cover-eyebrow">Дипломын хамгаалалт · 2026</span>
+  <h1>Linksy</h1>
+  <h2>AI агенттай, бодит цагийн нийгмийн платформ</h2>
+  <div class="cover-meta">
+    <div><strong>Хөгжүүлсэн:</strong> Munkhzul G.</div>
+    <div><strong>Удирдагч:</strong> [Багшийн нэр]</div>
+    <div><strong>Огноо:</strong> 2026</div>
+  </div>
+  <div class="footer-mark">Linksy</div>
+</section>
+
+<!-- ─────────── 2. Asуудал ─────────── -->
+<section class="page">
+  <span class="slide-num">02</span>
+  <h2 class="section">Асуудал</h2>
+  <p class="hero-sub" style="margin:0 0 28px;">
+    Орчин үеийн сошиал апп нь хэрэглэгчдээс маш олон зүйл шаарддаг —
+    гэхдээ хэрэглэгчид нь хариуд нь юу авдаг вэ?
+  </p>
+  <ul class="points">
+    <li>Хувийн нууцлал бага, өгөгдөл сурталчилгаагаар "наймаалдаг"</li>
+    <li>Алгоритм тулгана, хэрэглэгч урсгалаа удирдаж чадахгүй</li>
+    <li>Бодит цагийн харилцаа удаан, мэдэгдэл тогтворгүй</li>
+    <li>AI туслахууд гадуур, апп руу буцаж handle хийх ёстой</li>
+  </ul>
+  <div class="speaker">Linksy эдгээр асуудал тус бүрд шийдэл санал болгож байгаа</div>
+</section>
+
+<!-- ─────────── 3. Шийдэл ─────────── -->
+<section class="page">
+  <span class="slide-num">03</span>
+  <h2 class="section">Шийдэл — Linksy</h2>
+  <div class="cards-3">
+    <div class="card">
+      <span class="card-icon">🎯</span>
+      <h3>Тохируулсан feed</h3>
+      <p>"For you / Following / Close circle" — хэрэглэгч сонгож урсгалаа удирдана.</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">⚡</span>
+      <h3>Бодит цагийн чат</h3>
+      <p>SSE + Redis pub/sub. Мессеж 100мс-д хүрнэ. Group, request, read receipt.</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">🤖</span>
+      <h3>AI агент</h3>
+      <p>Зөвхөн ярихгүй — UI-г жинхэнэ жолоодон зам нэрс үйлдэл хийнэ.</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">🔐</span>
+      <h3>Аюулгүй авторизаци</h3>
+      <p>Passkey, 2FA (TOTP), OAuth, refresh-token rotation.</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">⭐</span>
+      <h3>Creator orчин</h3>
+      <p>XP/level, leaderboard, Stripe-аар subscription + tip.</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">📱</span>
+      <h3>PWA + web push</h3>
+      <p>Offline, install хийгдэх, web push мэдэгдэл, service worker.</p>
+    </div>
+  </div>
+  <div class="speaker">6 гол модуль — дараагийн слайдууд тус бүрийг гүнзгийрүүлэн харуулна</div>
+</section>
+
+<!-- ─────────── 4. Технологи ─────────── -->
+<section class="page">
+  <span class="slide-num">04</span>
+  <h2 class="section">Технологи</h2>
+
+  <div class="tech-row">
+    <h3>Frontend</h3>
+    <div class="pills">
+      <span class="pill">Next.js 16</span>
+      <span class="pill">React 19</span>
+      <span class="pill">TypeScript</span>
+      <span class="pill">Tailwind 4</span>
+      <span class="pill">Zustand</span>
+      <span class="pill">Turbopack</span>
+    </div>
+  </div>
+
+  <div class="tech-row">
+    <h3>Backend / Data</h3>
+    <div class="pills">
+      <span class="pill">Prisma 7</span>
+      <span class="pill">PostgreSQL</span>
+      <span class="pill">Redis</span>
+      <span class="pill">BullMQ</span>
+      <span class="pill">Server-Sent Events</span>
+      <span class="pill">JWT</span>
+    </div>
+  </div>
+
+  <div class="tech-row">
+    <h3>Гадны үйлчилгээ</h3>
+    <div class="pills">
+      <span class="pill">Google Gemini</span>
+      <span class="pill">Stripe</span>
+      <span class="pill">Resend</span>
+      <span class="pill">AWS S3</span>
+      <span class="pill">Sentry</span>
+      <span class="pill">SimpleWebAuthn</span>
+    </div>
+  </div>
+
+  <div class="speaker">Бүгд modern, production-ready stack — diploma-аас цааш ч ажиллах боломжтой</div>
+</section>
+
+<!-- ─────────── 5. Архитектур ─────────── -->
+<section class="page">
+  <span class="slide-num">05</span>
+  <h2 class="section">Real-time pipeline</h2>
+  <p class="hero-sub" style="margin:0 0 8px;">
+    Мессеж явуулсан секундын дотор бүх хүлээн авагч руу хүрэх 5 алхам:
+  </p>
+  <div class="pipeline">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-name">Send</div>
+      <div class="step-detail">Client → API</div>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-name">Persist</div>
+      <div class="step-detail">Prisma → Postgres</div>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-name">Publish</div>
+      <div class="step-detail">Redis pub/sub</div>
+    </div>
+    <div class="step">
+      <div class="step-num">04</div>
+      <div class="step-name">Push</div>
+      <div class="step-detail">SSE → client</div>
+    </div>
+    <div class="step">
+      <div class="step-num">05</div>
+      <div class="step-name">Render</div>
+      <div class="step-detail">React UI</div>
+    </div>
+  </div>
+  <div class="quote">
+    Олон давхар fallback: SSE drop хийсэн ч 5с polling + visibility refresh-аар хүрнэ.
+    Хэрэглэгч 5 секундээс илүү хүлээх боломжгүй.
+  </div>
+  <div class="speaker">SSE-ийн найдвартай бус байдлыг 4 давхар хамгаалалтаар нөхсөн</div>
+</section>
+
+<!-- ─────────── 6. AI Agent ─────────── -->
+<section class="page">
+  <span class="slide-num">06</span>
+  <h2 class="section">AI агент — UI жолоодоно</h2>
+  <p class="hero-sub" style="margin:0 0 18px;">
+    Gemini-ийн function calling-аар AI хариу + үйлдэл хоёуланг буцаана.
+  </p>
+
+  <div class="quote" style="font-size:17pt;">
+    <strong>Хэрэглэгч:</strong> "Кофены тухай пост хийе, зураг сонгох оруул"
+  </div>
+
+  <ul class="points">
+    <li><strong>navigate</strong>("/create") — Create хуудас руу зөөнө</li>
+    <li><strong>set_post_caption</strong>("Өглөөний кофе ☕...") — caption бөглөнө</li>
+    <li><strong>open_image_picker</strong>() — OS file picker автомат нээгдэнэ</li>
+  </ul>
+
+  <div class="speaker">5 tool ашиглах боломжтой: navigate, set_post_caption/location/audience, open_image_picker, open_story_editor</div>
+</section>
+
+<!-- ─────────── 7. Performance ─────────── -->
+<section class="page">
+  <span class="slide-num">07</span>
+  <h2 class="section">Performance оптимизаци</h2>
+
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-num">5×</div>
+      <div class="metric-lbl">Nav хурдсалт</div>
+    </div>
+    <div class="metric">
+      <div class="metric-num">100×</div>
+      <div class="metric-lbl">Bubble re-render</div>
+    </div>
+    <div class="metric">
+      <div class="metric-num">≤5с</div>
+      <div class="metric-lbl">Чат latency</div>
+    </div>
+    <div class="metric">
+      <div class="metric-num">2×</div>
+      <div class="metric-lbl">API хурдсалт</div>
+    </div>
+  </div>
+
+  <ul class="points">
+    <li><strong>Route group (shell):</strong> AppShell бүх хуудасны хооронд persist хийгдэнэ</li>
+    <li><strong>Memoized bubble:</strong> Stable callback-аар memo жинхэнэ ажилладаг</li>
+    <li><strong>TTL cache:</strong> /api/auth/me 4-5 удаа биш 1 удаа дуудагдана</li>
+    <li><strong>Turbopack:</strong> Dev compile 3-5с → 0.3с</li>
+  </ul>
+
+  <div class="speaker">4 өөр өнцгөөс performance-ыг оновчилсон</div>
+</section>
+
+<!-- ─────────── 8. Аюулгүй байдал ─────────── -->
+<section class="page">
+  <span class="slide-num">08</span>
+  <h2 class="section">Аюулгүй байдал</h2>
+
+  <div class="cards-2">
+    <div class="card">
+      <span class="card-icon">🔑</span>
+      <h3>Олон фактор нэвтрэлт</h3>
+      <p>Password + TOTP 2FA + backup code. Passkey (WebAuthn). Google OAuth.</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">🔄</span>
+      <h3>Refresh-token rotation</h3>
+      <p>JWT 15мин + refresh 7хоног. Single-flight rotation + grace cache.</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">🛡️</span>
+      <h3>CSRF + nonce CSP</h3>
+      <p>Double-submit CSRF. Хатуу CSP, nonce-based script-execution.</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">🚫</span>
+      <h3>Контент аюулгүй байдал</h3>
+      <p>Adult flag, blocked users, message requests, admin moderation panel.</p>
+    </div>
+  </div>
+
+  <div class="speaker">Бүх аюулгүй best-practice-ийг хэрэгжүүлсэн</div>
+</section>
+
+<!-- ─────────── 9. Хийсэн ажил ─────────── -->
+<section class="page">
+  <span class="slide-num">09</span>
+  <h2 class="section">Хийсэн ажлын хэмжээ</h2>
+
+  <div class="metrics">
+    <div class="metric"><div class="metric-num">148</div><div class="metric-lbl">Route</div></div>
+    <div class="metric"><div class="metric-num">60+</div><div class="metric-lbl">Компонент</div></div>
+    <div class="metric"><div class="metric-num">20+</div><div class="metric-lbl">Prisma model</div></div>
+    <div class="metric"><div class="metric-num">12</div><div class="metric-lbl">Гол feature</div></div>
+  </div>
+
+  <ul class="points">
+    <li><strong>Auth:</strong> Password / OAuth / Passkey / 2FA</li>
+    <li><strong>Content:</strong> Post / Story / Draft / Schedule</li>
+    <li><strong>Social:</strong> Follow / Block / Mute / Tag</li>
+    <li><strong>Communication:</strong> 1-1 + group чат / Notifications / Web push</li>
+    <li><strong>Creator:</strong> XP / Leaderboard / Stripe billing / Tip</li>
+    <li><strong>AI:</strong> Chat / Caption / Reply / Summary / Agent</li>
+  </ul>
+</section>
+
+<!-- ─────────── 10. Сорилт ─────────── -->
+<section class="page">
+  <span class="slide-num">10</span>
+  <h2 class="section">Тулгарсан сорилтууд</h2>
+
+  <ul class="points">
+    <li><strong>AppShell олон хуулсан:</strong> Route group + shared layout-аар шийдсэн</li>
+    <li><strong>Bubble memo ажиллахгүй:</strong> Stable callback + props refactor</li>
+    <li><strong>Dev SSE тогтворгүй:</strong> 4 давхар fallback (SSE + reconnect + polling + visibility)</li>
+    <li><strong>Dropdown navbar-ыг бүрхэх:</strong> ResizeObserver-ээр navbar-ыг дагах</li>
+    <li><strong>AI зөвхөн chat:</strong> Function calling + Zustand bridge → UI удирдана</li>
+  </ul>
+
+  <div class="speaker">Сорилт бүрд зөвхөн "Stack Overflow"-аас биш, архитектурийн шийдэл хэрэглэв</div>
+</section>
+
+<!-- ─────────── 11. Цаашид ─────────── -->
+<section class="page">
+  <span class="slide-num">11</span>
+  <h2 class="section">Цаашид өргөтгөх</h2>
+
+  <div class="cards-3">
+    <div class="card">
+      <span class="card-icon">📜</span>
+      <h3>Virtualization</h3>
+      <p>500+ мессежтэй чатад react-virtual нэвтрүүлэх.</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">🔒</span>
+      <h3>E2E шифрлэгдсэн чат</h3>
+      <p>Signal Protocol (Double Ratchet). Schema бэлэн.</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">📞</span>
+      <h3>Group video calls</h3>
+      <p>WebRTC SFU (LiveKit / MediaSoup).</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">🎨</span>
+      <h3>AI-аар зураг үүсгэх</h3>
+      <p>Gemini Imagen → caption + image → автомат submit.</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">📱</span>
+      <h3>Native mobile</h3>
+      <p>React Native / Expo. Одоо PWA + install.</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">🌐</span>
+      <h3>Multi-language</h3>
+      <p>RU, CN, JP. Одоо EN + MN дэмжсэн.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────── 12. Demo ─────────── -->
+<section class="page">
+  <span class="slide-num">12</span>
+  <p class="cover-eyebrow">Live demo</p>
+  <h1 class="hero-head">Демо хийе</h1>
+  <p class="hero-sub" style="font-size:22pt;">
+    Бодит цагийн чат, AI агент, Story creator, 2FA login — бүгдийг шууд харъя.
+  </p>
+  <div class="speaker">[~3-5 минутын demo: login → home feed → AI agent-ээр post үүсгэх → 2-р браузерт чат тэр даруй ирэх → 2FA нэвтрэх]</div>
+</section>
+
+<!-- ─────────── 13. Q&A ─────────── -->
+<section class="page cover">
+  <span class="cover-eyebrow">Хэлэлцүүлэг</span>
+  <h1>Баярлалаа</h1>
+  <h2>Асуулт хүлээж байна.</h2>
+  <div class="cover-meta">
+    <div><strong>GitHub:</strong> github.com/&lt;handle&gt;/linksy</div>
+    <div><strong>Demo:</strong> https://&lt;domain&gt;</div>
+    <div><strong>Холбоо:</strong> munkh@linksy.mn</div>
+  </div>
+  <div class="footer-mark">Linksy · 2026</div>
+</section>
+
+</body>
+</html>

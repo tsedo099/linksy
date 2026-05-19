@@ -1,0 +1,212 @@
+/**
+ * Design tokens, theme/accent variants, reset, a11y (font scale, reduced motion),
+ * focus rings, RTL. Imported from app/globals.css.
+ * Том `globals`-аас аажмаар задлах эхний давхарга — энд зөвхөн global суурь.
+ */
+:root {
+  --font-body: "Segoe UI", "Helvetica Neue", Arial;
+  --font-label: "Trebuchet MS", "Segoe UI", Arial;
+  --font-headline: "Franklin Gothic Medium", "Arial Narrow", "Segoe UI", Arial;
+  --app-background: #05030b;
+  --app-card: #0d0814;
+  --app-card-elevated: rgba(13, 8, 20, 0.94);
+  --app-card-soft: rgba(109, 40, 217, 0.1);
+  --app-card-strong: rgba(109, 40, 217, 0.2);
+  --app-text: #f5edff;
+  --app-text-muted: #b8abc9;
+  --app-icon: #a58cc6;
+  --app-icon-hover: #dccaf6;
+  --app-border: rgba(109, 40, 217, 0.22);
+  --app-accent: #7c3aed;
+  --app-accent-secondary: #6d28d9;
+  --app-accent-rgb: 124 58 237;
+  --story-aurora: conic-gradient(from 210deg, #40c0ff, #80e060, #8040e0, #40c0ff);
+  --story-aurora-glow-primary: rgba(64, 192, 255, 0.48);
+  --story-aurora-glow-secondary: rgba(128, 64, 224, 0.34);
+  --background: var(--app-background);
+  --surface: var(--app-card);
+  --surface-elevated: var(--app-card-elevated);
+  --surface-soft: var(--app-card-soft);
+  --surface-strong: var(--app-card-strong);
+  --text: var(--app-text);
+  --muted: var(--app-text-muted);
+  --muted-strong: var(--app-text);
+  --outline: var(--app-border);
+  --primary: var(--app-accent);
+  --secondary: var(--app-accent-secondary);
+  --tertiary: var(--app-accent-secondary);
+  --danger: #ff6e84;
+  --shadow: rgba(7, 12, 28, 0.45);
+}
+
+html[data-theme="light"] {
+  --app-background: #F3F6FB;
+  --app-card: #FFFFFF;
+  --app-card-elevated: rgba(255, 255, 255, 0.94);
+  --app-card-soft: rgba(15, 23, 42, 0.04);
+  --app-card-strong: rgba(15, 23, 42, 0.08);
+  --app-text: #0F172A;
+  --app-text-muted: #475569;
+  --app-icon: #64748B;
+  --app-icon-hover: #475569;
+  --app-border: rgba(15, 23, 42, 0.08);
+  --shadow: rgba(15, 23, 42, 0.12);
+}
+
+html[data-accent="indigo"] {
+  --app-accent: #6366F1;
+  --app-accent-secondary: #4F46E5;
+  --app-accent-rgb: 99 102 241;
+}
+
+html[data-accent="purple"] {
+  --app-accent: #7c3aed;
+  --app-accent-secondary: #6d28d9;
+  --app-accent-rgb: 124 58 237;
+}
+
+html[data-accent="blue"] {
+  --app-accent: #3B82F6;
+  --app-accent-secondary: #2563EB;
+  --app-accent-rgb: 59 130 246;
+}
+
+html[data-accent="green"] {
+  --app-accent: #22C55E;
+  --app-accent-secondary: #16A34A;
+  --app-accent-rgb: 34 197 94;
+}
+
+html[data-accent="orange"] {
+  --app-accent: #F97316;
+  --app-accent-secondary: #EA580C;
+  --app-accent-rgb: 249 115 22;
+}
+
+html[data-accent="yellow"] {
+  --app-accent: #CA8A04;
+  --app-accent-secondary: #A16207;
+  --app-accent-rgb: 202 138 4;
+}
+
+html[data-accent="white"] {
+  --app-accent: #FFFFFF;
+  --app-accent-secondary: #E5E7EB;
+  --app-accent-rgb: 255 255 255;
+}
+
+html[data-theme="light"][data-accent="white"] {
+  --app-accent: #0F172A;
+  --app-accent-secondary: #1E293B;
+  --app-accent-rgb: 15 23 42;
+}
+
+html[data-accent="black"] {
+  --app-accent: #0F172A;
+  --app-accent-secondary: #1E293B;
+  --app-accent-rgb: 15 23 42;
+}
+
+html[data-theme="light"][data-accent="black"] {
+  --app-accent: #0F172A;
+  --app-accent-secondary: #1E293B;
+  --app-accent-rgb: 15 23 42;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: dark;
+  font-size: 100%;
+  overflow-x: clip;
+  max-width: 100%;
+}
+
+html[data-theme="light"] {
+  color-scheme: light;
+}
+
+/* ── Accessibility: font size scale ──────────────────────────────────── */
+/* Adjust the root font-size so every rem-based dimension scales together. */
+html[data-font-scale="small"] {
+  font-size: 90%;
+}
+html[data-font-scale="medium"] {
+  font-size: 100%;
+}
+html[data-font-scale="large"] {
+  font-size: 115%;
+}
+
+/* ── Accessibility: reduced motion ───────────────────────────────────── */
+/*
+ * The provider sets `data-motion="reduced"` whenever the user explicitly
+ * picks reduced motion or when "system" is selected and the OS reports
+ * `prefers-reduced-motion: reduce`. We collapse animations and transitions
+ * to a near-instant duration so users don't get vestibular triggers, but
+ * still benefit from state changes (e.g. focus rings, hover) being visible.
+ */
+@media (prefers-reduced-motion: reduce) {
+  html[data-motion-pref="system"] *,
+  html[data-motion-pref="system"] *::before,
+  html[data-motion-pref="system"] *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+html[data-motion="reduced"] *,
+html[data-motion="reduced"] *::before,
+html[data-motion="reduced"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+html[data-motion="reduced"] {
+  scroll-behavior: auto !important;
+}
+
+html:not(.theme-ready) *,
+html:not(.theme-ready) *::before,
+html:not(.theme-ready) *::after {
+  transition: none !important;
+}
+
+body {
+  margin: 0;
+  min-height: 100svh;
+  max-width: 100%;
+  overflow-x: clip;
+  background: var(--app-background);
+  color: var(--text);
+  font-family: var(--font-body), sans-serif;
+  transition: background-color 180ms ease, color 180ms ease;
+  overflow-anchor: none;
+}
+
+/* ── WCAG: visible focus & contrast-friendly ring ─────────────────── */
+:focus {
+  outline: none;
+}
+:focus-visible {
+  outline: 2px solid var(--app-accent);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--app-background) 70%, var(--app-accent));
+}
+button:focus-visible,
+[role="button"]:focus-visible,
+[role="tab"]:focus-visible,
+[role="menuitem"]:focus-visible {
+  outline-offset: 3px;
+}
+
+/* ── RTL (e.g. Arabic UI) ───────────────────────────────────────────── */
+html[dir="rtl"] {
+  direction: rtl;
+}

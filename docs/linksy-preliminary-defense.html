@@ -1,0 +1,875 @@
+<!doctype html>
+<html lang="mn">
+<head>
+<meta charset="utf-8" />
+<title>Linksy — Дипломын Урьдчилсан Хамгаалалт</title>
+<style>
+  @page { size: A4; margin: 12mm; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #05030b;
+    color: #f5edff;
+    font-family: "Segoe UI", "Calibri", Arial, sans-serif;
+    line-height: 1.5;
+  }
+  .page {
+    min-height: 273mm;
+    padding: 16mm 14mm;
+    page-break-after: always;
+    background:
+      radial-gradient(circle at 86% 6%, rgba(124, 58, 237, 0.32), transparent 46mm),
+      radial-gradient(circle at 8% 96%, rgba(192, 132, 252, 0.18), transparent 50mm),
+      linear-gradient(180deg, #0b0615 0%, #05030b 100%);
+    border: 1px solid rgba(167, 139, 250, 0.18);
+  }
+  .page:last-child { page-break-after: auto; }
+  .cover {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 273mm;
+  }
+  .eyebrow {
+    margin: 0 0 10px;
+    color: #c4b5fd;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+  }
+  h1 {
+    margin: 0 0 8px;
+    font-size: 56px;
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    color: #fff;
+  }
+  h2 {
+    margin: 0 0 12px;
+    font-size: 26px;
+    line-height: 1.1;
+    letter-spacing: -0.025em;
+    color: #fff;
+  }
+  h3 {
+    margin: 14px 0 6px;
+    color: #ddd6fe;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  p { margin: 0 0 7px; color: #d8c8ff; font-size: 12px; }
+  ul { margin: 5px 0 0; padding-left: 18px; color: #e9d5ff; font-size: 12px; }
+  li { margin: 3px 0; }
+  .lead {
+    max-width: 155mm;
+    margin-top: 18px;
+    color: #efe5ff;
+    font-size: 16px;
+    line-height: 1.45;
+  }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 26px;
+    padding: 5px 11px;
+    border: 1px solid rgba(192, 132, 252, 0.36);
+    border-radius: 999px;
+    background: rgba(124, 58, 237, 0.20);
+    color: #f5edff;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 10px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 9px; margin-top: 10px; }
+  .card {
+    padding: 10px 12px;
+    border: 1px solid rgba(167, 139, 250, 0.2);
+    border-radius: 11px;
+    background: rgba(18, 10, 31, 0.72);
+  }
+  .card strong { display: block; margin-bottom: 3px; color: #fff7ff; font-size: 13px; }
+  .card p { font-size: 11.5px; margin: 0; }
+  .pros, .cons {
+    border-radius: 11px;
+    padding: 11px 13px;
+    border: 1px solid;
+    margin-top: 8px;
+  }
+  .pros {
+    background: linear-gradient(180deg, rgba(34,197,94,0.10), rgba(10,6,19,0.96));
+    border-color: rgba(34,197,94,0.35);
+  }
+  .cons {
+    background: linear-gradient(180deg, rgba(244,63,94,0.10), rgba(10,6,19,0.96));
+    border-color: rgba(244,63,94,0.35);
+  }
+  .pros strong, .cons strong { display: block; margin-bottom: 4px; font-size: 13px; }
+  .pros strong { color: #86efac; }
+  .cons strong { color: #fda4af; }
+  .pros li, .cons li { font-size: 11.5px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 11px; }
+  th, td {
+    text-align: left;
+    padding: 6px 8px;
+    border-bottom: 1px solid rgba(167, 139, 250, 0.18);
+    color: #e9d5ff;
+    vertical-align: top;
+  }
+  th {
+    color: #c4b5fd;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: rgba(124, 58, 237, 0.12);
+  }
+  .stat { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; margin-top: 12px; }
+  .stat-card {
+    padding: 11px;
+    border: 1px solid rgba(192, 132, 252, 0.28);
+    border-radius: 11px;
+    background: rgba(20, 12, 34, 0.78);
+    text-align: center;
+  }
+  .stat-card .num { color: #c4b5fd; font-size: 24px; font-weight: 900; line-height: 1; margin-bottom: 3px; }
+  .stat-card .label { color: #a78bfa; font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
+  .footer-page {
+    position: fixed;
+    bottom: 6mm;
+    right: 16mm;
+    color: #7c5fa3;
+    font-size: 9.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .arch {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border: 1px solid rgba(167, 139, 250, 0.25);
+    border-radius: 11px;
+    background: rgba(10, 6, 18, 0.88);
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 10.5px;
+    color: #e9d5ff;
+    white-space: pre;
+    line-height: 1.4;
+  }
+  .roadmap { display: grid; gap: 7px; margin-top: 10px; }
+  .roadmap-item {
+    padding: 9px 12px;
+    border-left: 3px solid #a78bfa;
+    border-radius: 10px;
+    background: rgba(12, 7, 22, 0.88);
+  }
+  .roadmap-item strong { color: #fff7ff; font-size: 12.5px; display: block; margin-bottom: 2px; }
+  .roadmap-item p { font-size: 11.5px; margin: 0; }
+  .badge-done { background: rgba(34,197,94,0.18); color: #86efac; padding: 2px 7px; border-radius: 999px; font-size: 9.5px; font-weight: 800; letter-spacing: 0.06em; }
+  .badge-wip { background: rgba(234,179,8,0.18); color: #fde047; padding: 2px 7px; border-radius: 999px; font-size: 9.5px; font-weight: 800; letter-spacing: 0.06em; }
+  .badge-todo { background: rgba(244,63,94,0.18); color: #fda4af; padding: 2px 7px; border-radius: 999px; font-size: 9.5px; font-weight: 800; letter-spacing: 0.06em; }
+  .quote-box {
+    margin-top: 12px;
+    padding: 12px 14px;
+    border: 1px solid rgba(192, 132, 252, 0.3);
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.18), rgba(10, 6, 19, 0.96));
+  }
+  .tech-row {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 12px;
+    padding: 10px 12px;
+    margin-top: 7px;
+    border: 1px solid rgba(167, 139, 250, 0.2);
+    border-radius: 10px;
+    background: rgba(18, 10, 31, 0.72);
+    align-items: center;
+  }
+  .tech-name { color: #fff; font-weight: 800; font-size: 13px; }
+  .tech-name small { display: block; color: #a78bfa; font-size: 10px; font-weight: 700; margin-top: 2px; letter-spacing: 0.05em; text-transform: uppercase; }
+  .tech-why { color: #d8c8ff; font-size: 11.5px; line-height: 1.5; margin: 0; }
+  .step {
+    display: grid;
+    grid-template-columns: 30px 1fr;
+    gap: 9px;
+    align-items: start;
+    padding: 9px 11px;
+    border: 1px solid rgba(167, 139, 250, 0.18);
+    border-radius: 10px;
+    background: rgba(13, 8, 20, 0.84);
+    margin-bottom: 6px;
+  }
+  .num {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #7c3aed, #c084fc);
+    color: #12081e;
+    font-weight: 900;
+    font-size: 12px;
+  }
+  .step-title { margin: 0 0 1px; color: #fff7ff; font-weight: 800; font-size: 12.5px; }
+  .step p { font-size: 11px; margin: 0; }
+  .speech {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-left: 4px solid #fbbf24;
+    border-radius: 8px;
+    background: rgba(251, 191, 36, 0.08);
+  }
+  .speech-label {
+    display: block;
+    margin-bottom: 6px;
+    color: #fbbf24;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+  .speech p {
+    margin: 0;
+    color: #fef3c7;
+    font-size: 12.5px;
+    line-height: 1.65;
+    font-style: italic;
+  }
+  .speech p + p { margin-top: 6px; }
+  .speech b { color: #fff; font-style: normal; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<!-- ============== 1. COVER ============== -->
+<section class="page cover">
+  <p class="eyebrow">Дипломын урьдчилсан хамгаалалт · 2026</p>
+  <h1>Linksy</h1>
+  <p class="lead">
+    Сайн байна уу. Миний дипломын ажил <strong>Linksy</strong> нэртэй нийгмийн сүлжээ платформ. Энэ нь зүгээр нэг
+    feed, like, comment-тай энгийн апп биш юм. Доорх боломжуудыг бүгдийг нь нэг систем дотор бодитоор хэрэгжүүлсэн:
+    <em>хувийн тойргийн мессеж, шифрлэгдсэн чат, дуу/видео дуудлага, гар утас + browser-руу push мэдэгдэл,
+    creator-уудын XP оноо систем.</em>
+  </p>
+  <div class="meta">
+    <span class="pill">Next.js 16</span>
+    <span class="pill">React 19</span>
+    <span class="pill">TypeScript</span>
+    <span class="pill">PostgreSQL 16</span>
+    <span class="pill">Prisma 7</span>
+    <span class="pill">Redis</span>
+    <span class="pill">Docker</span>
+    <span class="pill">WebRTC</span>
+    <span class="pill">E2EE</span>
+    <span class="pill">Sentry</span>
+  </div>
+
+</section>
+
+<!-- ============== 2. INTRO + FEATURES (combined) ============== -->
+<section class="page">
+  <p class="eyebrow">1 · Танилцуулга ба үндсэн боломжууд</p>
+  <h2>Linksy юуг шийдэх вэ, ямар боломжуудтай вэ?</h2>
+  <p>
+    Эхлээд асуудлаас эхэлье. Facebook, Instagram гэх мэт нийгмийн сүлжээнүүд хэрэглэгчийн өгөгдлийг хязгааргүй
+    цуглуулдаг, мөн ямар пост хэнд харагдахыг "нууц алгоритм" шийддэг. Linksy үүний оронд хэрэглэгч өөрөө
+    <strong>хэн пост-ыг нь үзэх</strong>-ийг (Public, найз, эсвэл "Close circle" гэсэн ойрын тойрог) шийдэх
+    боломжтой. Эрэмбэлэлт нь нууц биш — <strong>like + comment-ийн тоо × шинэлэг байдал</strong> гэсэн ил тод
+    томьёотой.
+  </p>
+  <p>Системийн үндсэн 10 боломжийг танилцуулъя:</p>
+
+  <div class="grid-2">
+    <div class="card">
+      <strong>🎨 Creator Mode + XP оноо</strong>
+      <p>2 пост эсвэл 10 like/comment хүлээн авсан хэрэглэгч идэвхжүүлж болно. Пост бичих=10, like ирэх=2, comment=3, follow=4, өдөр бүр нэвтрэх=5 оноо. Subscription tier-ээс хамаарч оноо үржинэ. Redis-д leaderboard.</p>
+    </div>
+    <div class="card">
+      <strong>📊 Creator Dashboard</strong>
+      <p>Үзэлт, like, comment, save, repost, follow-ийн жинхэнэ статистик. Өмнөх 7/30/90 хоногтой харьцуулсан өсөлт хувиар. Өдрийн график, шилдэг 5 пост.</p>
+    </div>
+    <div class="card">
+      <strong>🔐 Authentication</strong>
+      <p>Email + нууц үгээр бүртгэх/нэвтрэх. Token нь 15 минут тутамд солигдох (security), 2FA код, email баталгаажуулалт, нууц үг сэргээх, олон удаа буруу оруулбал түр түгжих.</p>
+    </div>
+    <div class="card">
+      <strong>📰 5-н горимтой Feed</strong>
+      <p><strong>For You</strong> (бүгд), <strong>Friends</strong> (зөвхөн дагасан), <strong>Close circle</strong> (ойрын тойрог), <strong>Creator</strong> (creator-ууд), <strong>Discover</strong> (алгоритмаар сонгогдсон шинэ хүмүүс).</p>
+    </div>
+    <div class="card">
+      <strong>📸 Пост &amp; Story</strong>
+      <p>1-4 зураг/видео, санал асуулга, цаг товлох, draft, цомог, comment модераци, хамтран зохиогчид, hashtag/mention, харааны бэрхшээлд зориулсан alt бичиг заавал.</p>
+    </div>
+    <div class="card">
+      <strong>💬 Бодит цагийн чат</strong>
+      <p>1-1 эсвэл group чат, live шинэчлэлт, "бичиж байна..." indicator, унших баталгаа, дуут мессеж, тогтоосон хугацаа өнгөрсний дараа арилах мессеж.</p>
+    </div>
+    <div class="card">
+      <strong>🔒 End-to-End шифрлэлт</strong>
+      <p>Мессеж зөвхөн илгээгч/хүлээн авагч хоёрт уншиж болохуйц. Сервер plaintext харахгүй — зөвхөн шифрлэгдсэн ciphertext хадгалдаг. Хувийн түлхүүр browser-аас гадагш гарахгүй.</p>
+    </div>
+    <div class="card">
+      <strong>📞 Дуу/Видео дуудлага</strong>
+      <p>WebRTC — медиа stream нь peer-to-peer (хэрэглэгч хооронд шууд), сервер дамждаггүй. NAT-ийн ард байгаа хэрэглэгчдэд coturn TURN сервер ашигладаг.</p>
+    </div>
+    <div class="card">
+      <strong>🔔 Гурван суваг Push</strong>
+      <p>Browser, Android (FCM), iOS (APNs) — гурван өөр платформд нэг систем мэдэгдэл илгээдэг. Хэрэглэгчийн "чимээгүй цагийн" тохиргоог хүндэтгэнэ.</p>
+    </div>
+    <div class="card">
+      <strong>🌍 6 хэл + GDPR + Хяналт</strong>
+      <p>Англи, Монгол, Хятад, Япон, Солонгос, Араб (баруунаас зүүн). Cookie consent banner, өгөгдлөө татаж авах эрх. Алдааг Sentry-р барих, лог-ыг pino-р цуглуулах.</p>
+    </div>
+  </div>
+
+  <div class="footer-page">Linksy · 02</div>
+</section>
+
+<!-- ============== 3. ARCHITECTURE ============== -->
+<section class="page">
+  <p class="eyebrow">2 · Архитектур ба дата урсгал</p>
+  <h2>Системийн зураглал</h2>
+
+  <p>
+    Дараагийн алхамд систем хэрхэн зохион байгуулагдсаныг тайлбарлая. <strong>Next.js App Router</strong> нь
+    сервер болон клиент хоёрыг нэг кодын баазад нэгтгэн ажиллуулдаг тул хоёр серверийг тусдаа deploy хийх
+    шаардлагагүй. Бодит цагийн боломжуудад <strong>Server-Sent Events</strong> ба <strong>Redis Pub/Sub</strong>
+    ашиглаж, олон Node.js instance дээр event-ийг fan-out хийнэ.
+  </p>
+
+  <div class="arch">┌──────────────┐      ┌────────────────────────────┐      ┌──────────────┐
+│   Browser    │ ───► │  Next.js (App Router)      │ ───► │  PostgreSQL  │
+│ (React 19)   │ ◄─── │  - API routes              │ ◄─── │   (Prisma 7) │
+└──────┬───────┘      │  - Server Components       │      └──────────────┘
+       │              │  - Middleware (CSRF/Auth)  │
+       │ SSE          └──────┬─────────────────────┘
+       ▼                     │
+┌──────────────┐             ▼
+│ Service      │      ┌──────────────┐    ┌──────────────────┐
+│ Worker       │      │   Redis      │ ─► │  BullMQ workers  │
+│ (Web Push)   │      │  Pub/Sub +   │    │  - email queue   │
+└──────────────┘      │  Rate limit  │    │  - cron cleanup  │
+                      │  Leaderboard │    │  - XP daily cap  │
+                      └──────┬───────┘    └──────────────────┘
+                             │
+                             ▼
+                      ┌─────────────────┐
+                      │  WebRTC + TURN  │
+                      │  (coturn)       │
+                      └─────────────────┘</div>
+
+  <h3>Шифрлэгдсэн мессеж 4 алхмаар явагддаг</h3>
+  <div class="step">
+    <div class="num">1</div>
+    <div>
+      <p class="step-title">Хувийн түлхүүр үүсгэх</p>
+      <p>Хэрэглэгч browser-ээрээ нийтийн (public) болон хувийн (private) хоёр түлхүүр үүсгэдэг. Зөвхөн нийтийн түлхүүрийг л серверт илгээнэ. <strong>Хувийн түлхүүр browser дотроос гадагш гарахгүй.</strong></p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="num">2</div>
+    <div>
+      <p class="step-title">Хоёр хүний хооронд нууц утга тохирох</p>
+      <p>Илгээгч нөгөө хүний нийтийн түлхүүрийг авна. Дараа нь хоёр хүний түлхүүрүүдийг хольж зөвхөн тэр хоёрт мэдэгдэх <strong>нэг ижил нууц утга</strong>-ыг гаргаж авдаг. Энэ нь сервер хэзээ ч мэдэхгүй утга.</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="num">3</div>
+    <div>
+      <p class="step-title">Мессежийг шифрлээд илгээх</p>
+      <p>Илгээгч мессежээ тэр нууц утгаар шифрлээд серверт илгээнэ. Сервер задлахгүй — гарын үсэг шиг харагдах ciphertext-ийг л харна. Хэрэв client алдаагаар plaintext илгээвэл сервер шууд "" болгоно.</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="num">4</div>
+    <div>
+      <p class="step-title">Хүлээн авагчид хүргэх ба задлах</p>
+      <p>Сервер шифрлэгдсэн мессежийг хүлээн авагчид яаралтай хүргэнэ (SSE-ээр). Хүлээн авагч өөрийн хувийн түлхүүрээрээ задлаж жинхэнэ мессежийг уншина.</p>
+    </div>
+  </div>
+
+  <div class="footer-page">Linksy · 03</div>
+</section>
+
+<!-- ============== 4. TECHNOLOGY (with WHY) ============== -->
+<section class="page">
+  <p class="eyebrow">3 · Ашигласан технологи — яагаад сонгосон бэ?</p>
+  <h2>Tech stack ба сонголтын үндэслэл</h2>
+  <p>
+    Энэ хэсэгт ашигласан технологи бүрийг яагаад сонгосноо тайлбарлая. Технологийн нэрийг жагсаах нь хангалтгүй
+    тул сонголтын логикоо тэр чигээр нь танилцуулна:
+  </p>
+
+  <div class="tech-row">
+    <div class="tech-name">Next.js 16<small>frontend + backend</small></div>
+    <p class="tech-why"><strong>Яагаад:</strong> Хуудас (frontend) болон API хоёрыг нэг кодын дотор бичиж нэг газар deploy хийнэ. Хоёр өөр сервер удирдах шаардлагагүй. Бүх API дээр auth, CSRF, rate-limit зэргийг middleware нэг газар хэрэгжүүлнэ.</p>
+  </div>
+
+  <div class="tech-row">
+    <div class="tech-name">React 19 + TypeScript<small>UI бүтэц</small></div>
+    <p class="tech-why"><strong>Яагаад:</strong> React нь UI-г жижиг, давтан хэрэглэх боломжтой component-ууд болгож хуваадаг. TypeScript нь алдааг код хийж байх үед барьдаг учраас том төсөлд refactoring аюулгүй болно.</p>
+  </div>
+
+  <div class="tech-row">
+    <div class="tech-name">PostgreSQL 16<small>үндсэн өгөгдлийн сан</small></div>
+    <p class="tech-why"><strong>Яагаад:</strong> Хэрэглэгч ↔ пост ↔ комент гэх мэт олон харилцан холбоотой өгөгдөлд таарна. Олон үйлдлийг нэг "atom" болгож хэрэв нэг нь алдвал бүгдийг буцаах боломжтой. Аналитикт зориулсан хүчирхэг SQL функцуудтай.</p>
+  </div>
+
+  <div class="tech-row">
+    <div class="tech-name">Prisma 7<small>ORM (DB ↔ код гүүр)</small></div>
+    <p class="tech-why"><strong>Яагаад:</strong> Schema файлаас TypeScript type-уудыг автоматаар үүсгэдэг. Хэрэв DB schema өөрчлөгдвөл код шууд алдаа заана. Migration-уудыг хянахад CI дээр автомат шалгалт хийнэ.</p>
+  </div>
+
+  <div class="tech-row">
+    <div class="tech-name">Redis<small>хурдан санах ой</small></div>
+    <p class="tech-why"><strong>Яагаад:</strong> Гурван өөр ажилд нэг систем: (1) олон удаа нэвтрэх оролдлогыг тоолох, (2) олон сервер хооронд real-time event дамжуулах, (3) Creator XP-ийн leaderboard. Бүгд миллисекундын хурдтай.</p>
+  </div>
+
+  <div class="tech-row">
+    <div class="tech-name">BullMQ<small>background ажлууд</small></div>
+    <p class="tech-why"><strong>Яагаад:</strong> Email илгээх, цэвэрлэгээний cron гэх мэт удаан ажлуудыг HTTP хүсэлтээс салгаж тусдаа процессоор гүйцэтгэдэг. Алдаатай ажлыг автоматаар дахин оролддог.</p>
+  </div>
+
+  <div class="tech-row">
+    <div class="tech-name">WebRTC + coturn<small>дуу/видео дуудлага</small></div>
+    <p class="tech-why"><strong>Яагаад:</strong> WebRTC нь медиа stream-ийг хэрэглэгч хоёр хооронд <strong>шууд</strong> дамжуулдаг тул сервер дамждаггүй — bandwidth идэхгүй. NAT-ийн ард байгаа хэрэглэгчдэд coturn TURN сервер нь "гүүр" хийж өгдөг.</p>
+  </div>
+
+  <div class="tech-row">
+    <div class="tech-name">Web Crypto API<small>шифрлэлтийн алхам</small></div>
+    <p class="tech-why"><strong>Яагаад:</strong> Browser-т өөрөө шингэсэн API учраас тусдаа library суулгах шаардлагагүй, build хэмжээг өсгөхгүй. Шифрлэлтийн алгоритмуудыг компьютерийн hardware-аар хурдан гүйцэтгэдэг.</p>
+  </div>
+
+  <div class="footer-page">Linksy · 04</div>
+</section>
+
+<!-- ============== 5. TECHNOLOGY (continued) ============== -->
+<section class="page">
+  <p class="eyebrow">3 · Технологи (үргэлжлэл)</p>
+  <h2>Бусад чухал сонголтууд</h2>
+  <p>Үргэлжлүүлэн validation, real-time push, observability, deployment талын сонголтуудаа тайлбарлая:</p>
+
+  <div class="tech-row">
+    <div class="tech-name">Zod<small>оролтын шалгалт</small></div>
+    <p class="tech-why"><strong>Яагаад:</strong> Хэрэглэгчийн API руу илгээх өгөгдлийг бүгдийг нэг газар (schema-аар) шалгадаг. Frontend form ба backend нэг ижил schema reuse хийдэг тул хоёр газар адил дүрэм бичих шаардлагагүй.</p>
+  </div>
+
+  <div class="tech-row">
+    <div class="tech-name">Zustand<small>client state</small></div>
+    <p class="tech-why"><strong>Яагаад:</strong> Redux-ээс хамаагүй хөнгөн (1KB), бараг код бичихгүйгээр state удирдана. Жижиг store-уудад (theme, notification) хангалттай.</p>
+  </div>
+
+  <div class="tech-row">
+    <div class="tech-name">VAPID · FCM · APNs<small>push мэдэгдэл</small></div>
+    <p class="tech-why"><strong>Яагаад:</strong> Гурван өөр платформ — browser (VAPID), Android (FCM), iOS (APNs) — тус бүрд тусгай суваг ашигладаг. Бид гурвыг нэг dispatcher-аар нэгтгэснээр feature код суваг бүрийн дэлгэрэнгүйг мэдэх шаардлагагүй.</p>
+  </div>
+
+  <div class="tech-row">
+    <div class="tech-name">Server-Sent Events<small>сервер → client live</small></div>
+    <p class="tech-why"><strong>Яагаад:</strong> WebSocket-ийн оронд SSE-ийг сонгосон. SSE нь HTTP дээр явдаг тул firewall-аар амар, автомат дахин холбогддог. Бид зөвхөн сервер→client чиглэлд мессеж явуулна — хоёр чиглэлтэй WebSocket хэрэггүй.</p>
+  </div>
+
+  <div class="tech-row">
+    <div class="tech-name">DOMPurify<small>XSS халдлага хамгаалалт</small></div>
+    <p class="tech-why"><strong>Яагаад:</strong> Хэрэглэгчийн илгээсэн HTML (rich-text comment гэх мэт) дотор аюултай script байж болзошгүй. DOMPurify нь HTML-ийг "цэвэрлэж" зөвхөн зөвшөөрсөн tag-уудыг үлдээдэг.</p>
+  </div>
+
+  <div class="tech-row">
+    <div class="tech-name">Sharp + ffmpeg<small>зураг/видео боловсруулалт</small></div>
+    <p class="tech-why"><strong>Яагаад:</strong> Зургийг WebP формат руу шилжүүлэн хэмжээг 60-70% багасгана. Видеоны thumbnail (хавтасны зураг) автомат үүсгэнэ. Хоёул native binary учраас Node-ийн main thread-ийг саатуулахгүй.</p>
+  </div>
+
+  <div class="tech-row">
+    <div class="tech-name">Sentry + pino<small>алдаа &amp; лог</small></div>
+    <p class="tech-why"><strong>Яагаад:</strong> Sentry — production дээр гарсан алдааг автоматаар alert-той цуглуулна. Pino — JSON формат лог, дэлхийн хамгийн хурдан Node logger-уудын нэг — server-т ачаалал бараг өгөхгүй.</p>
+  </div>
+
+  <div class="tech-row">
+    <div class="tech-name">Docker + Compose<small>орчны нэгдмэлжилт</small></div>
+    <p class="tech-why"><strong>Яагаад:</strong> "Энэ миний компьютер дээр ажиллана" гэдэг асуудлыг шийднэ. <code>docker compose up</code> гэсэн нэг команд нь app, PostgreSQL, Redis, coturn зэрэг бүх системийг нэгэн зэрэг ажиллуулна.</p>
+  </div>
+
+  <div class="footer-page">Linksy · 05</div>
+</section>
+
+<!-- ============== 6. SECURITY + REAL-TIME (combined) ============== -->
+<section class="page">
+  <p class="eyebrow">4 · Аюулгүй байдал ба бодит цагийн боломжууд</p>
+  <h2>Defense-in-depth ба real-time архитектур</h2>
+  <p>
+    Аюулгүй байдалд би <strong>defense-in-depth</strong> буюу олон давхаргат хамгаалалтын зарчмыг хэрэгжүүлсэн.
+    Нэг хамгаалалт нэвтэрсэн ч дараагийнх нь ажиллана. Доорх хүснэгтэд гол давхаргуудыг нэгтгэсэн:
+  </p>
+
+  <h3>12 давхаргат хамгаалалт</h3>
+  <table>
+    <tr><th>Давхарга</th><th>Юунаас сэргийлдэг вэ?</th></tr>
+    <tr><td>Нэвтрэлт</td><td>Token-ийг 15 минут тутамд солих, refresh token-ийг hash хийгээд DB-д хадгалах, 2FA код</td></tr>
+    <tr><td>Brute-force халдлага</td><td>1 минутад 5+ удаа буруу нууц үг оруулбал нэр-эзний нэр болон IP-г 15 минут түр түгжих</td></tr>
+    <tr><td>Сул нууц үг</td><td>Том+жижиг үсэг + тоо + тэмдэгт заавал, 1000 гаруй нийтлэг нууц үгийг хориглох</td></tr>
+    <tr><td>CSRF халдлага</td><td>Cookie + header-т ижил token шаардах — өөр сайтаас хэрэглэгчийн өмнөөс үйлдэл хийхээс сэргийлнэ</td></tr>
+    <tr><td>Security headers</td><td>HSTS (HTTPS заавал), X-Frame DENY (iframe-д суулгахаас сэргийлнэ), CSP (зөвхөн зөвшөөрсөн source-аас script ачаалах)</td></tr>
+    <tr><td>Гадны API хандалт</td><td>CORS allow-list: зөвшөөрсөн origin-аас л хүсэлт хүлээн авна</td></tr>
+    <tr><td>SQL injection</td><td>Бүх raw SQL нь параметр-аар явдаг, хэрэглэгчийн оролтыг шууд SQL-д хольдоггүй</td></tr>
+    <tr><td>XSS халдлага</td><td>Хэрэглэгчийн илгээсэн HTML-ийг DOMPurify-ээр цэвэрлэж байж л render-дэг</td></tr>
+    <tr><td>End-to-end шифрлэлт</td><td>Мессеж сервер дээр шифрлэгдэж хадгалагдана. Серверийн админ ч хэзээ ч уншиж чадахгүй</td></tr>
+    <tr><td>Webhook хуурамчлал</td><td>Stripe, push webhook-ийн HMAC гарын үсгийг шалгана</td></tr>
+    <tr><td>Аудит лог</td><td>Login, password солих, 2FA, дуудлагын төлөв — бүгдийг бүртгэдэг</td></tr>
+    <tr><td>GDPR нийцэл</td><td>Cookie зөвшөөрөл асуух, хэрэглэгч өөрийн өгөгдлийг татаж авах эрх</td></tr>
+  </table>
+
+  <h3>Real-time backbone</h3>
+  <p>Бодит цагийн харилцаа нь дөрвөн үндсэн системээс бүрдэнэ:</p>
+  <div class="grid-2">
+    <div class="card">
+      <strong>SSE + Redis Pub/Sub</strong>
+      <p>Бүх live feature нэг архитектур дээр: messages, typing, notification, story view, call signaling. Олон Node instance дээр Redis-аар fan-out.</p>
+    </div>
+    <div class="card">
+      <strong>WebRTC + coturn</strong>
+      <p>Signaling: SDP+ICE Redis pub/sub, 240/min rate-limit. Media: P2P only. NAT traversal: ephemeral HMAC-SHA1 credential per user.</p>
+    </div>
+    <div class="card">
+      <strong>Disappearing messages</strong>
+      <p>OFF · TIMED · AFTER_READ mode, 60..604800 сек TTL. Snapshot нь Message row-д хадгалагдах тул policy дараа өөрчлөгдсөн ч хуучин мессеж тэр чигтээ үлдэнэ.</p>
+    </div>
+    <div class="card">
+      <strong>Multi-channel push</strong>
+      <p>Нэг dispatcher хэрэглэгчийн бүх PushSubscription-уудад fan-out. Quiet hours per-TZ minute-of-day. Unsubscribed token автоматаар цэвэрлэгдэнэ.</p>
+    </div>
+  </div>
+
+  <div class="footer-page">Linksy · 06</div>
+</section>
+
+<!-- ============== 7a. WHAT'S NEW SINCE APRIL — Part 1: Auth/Security/Data ============== -->
+<section class="page">
+  <p class="eyebrow">5 · Танилцуулгаас хойш нэмэгдсэн боломжууд (1/3)</p>
+  <h2>Аюулгүй байдал, нэвтрэлт, өгөгдлийн загвар</h2>
+  <p>
+    April сардын танилцуулга үед апп нь зөвхөн <strong>JWT cookie auth</strong>, <strong>8 ширхэг Prisma model</strong>,
+    үндсэн like/comment/follow/notification урсгал л байсан. Тэр цагаас хойш өнөөдрийг хүртэл production-түвшний
+    дараах <strong>системүүд бодитоор хэрэгжсэн</strong>. Эхний хэсэгт — нэвтрэлт, аюулгүй байдал, өгөгдлийн бүтэц:
+  </p>
+
+  <div class="stat">
+    <div class="stat-card"><div class="num">8 → 50+</div><div class="label">Prisma model</div></div>
+    <div class="stat-card"><div class="num">~25 → 200+</div><div class="label">API endpoint</div></div>
+    <div class="stat-card"><div class="num">0 → 49</div><div class="label">Migration</div></div>
+    <div class="stat-card"><div class="num">0 → 7</div><div class="label">Cron job</div></div>
+  </div>
+
+  <h3>🔐 Нэвтрэлтийн систем (шинээр бүхэлд нь)</h3>
+  <div class="grid-2">
+    <div class="card">
+      <strong>2FA (TOTP) + backup codes</strong>
+      <p>Google Authenticator-той бэлэн. QR код setup, 6 оронтой код, 10 ширхэг нэг удаагийн backup code, Settings → Security-аас идэвхжүүлэх/унтраах.</p>
+    </div>
+    <div class="card">
+      <strong>Email verification + Password reset</strong>
+      <p>Token-based verify (24ц TTL), нууц үг сэргээх (60 мин TTL), Resend/SendGrid + React-email template (welcome/verify/reset/login-alert/digest).</p>
+    </div>
+    <div class="card">
+      <strong>Refresh token rotation</strong>
+      <p>15-мин access JWT + opaque refresh (SHA-256 hash) 30-day sliding window. Ашигласан бүрт шинэ refresh issuance. Logout → revoke.</p>
+    </div>
+    <div class="card">
+      <strong>Brute-force lockout</strong>
+      <p>Redis rate-limit (IP 40/15мин + identifier 5/1мин), 5 буруу нууц → 15 мин account lockout (`User.failedLoginAttempts/lockedUntil`), 429 + Retry-After.</p>
+    </div>
+    <div class="card">
+      <strong>Password policy + Common blocklist</strong>
+      <p>Том+жижиг+тоо+тэмдэгт заавал, 8-128 урт, дахигдах тэмдэгт хориглох, 1000+ "password123", он+суурь хэв маяг бүхий Set blocklist.</p>
+    </div>
+    <div class="card">
+      <strong>Session list + revoke</strong>
+      <p>Идэвхтэй device-уудын жагсаалт (IP + UA + ipgeo + lastSeen) + remote revoke. "Sign out other sessions" Settings-д.</p>
+    </div>
+  </div>
+
+  <h3>🛡️ Web-аюулгүй байдал (12-давхаргат "defense-in-depth")</h3>
+  <table>
+    <tr><th>Давхарга</th><th>Хэрэгжилт</th></tr>
+    <tr><td>Security headers</td><td>CSP (script/style/img/connect/frame source-уудыг нягт), HSTS (production-д max-age 2 жил, preload), X-Frame DENY, X-Content-Type nosniff, Referrer strict-origin, Permissions-Policy (cam/mic = self)</td></tr>
+    <tr><td>CSRF double-submit</td><td>`linksy_csrf` cookie (JS-readable) + `x-csrf-token` header нэг утгатай байх; mutating method-д middleware шалгана; webhook + auth flow чөлөөлсөн</td></tr>
+    <tr><td>CORS allow-list</td><td>`CORS_ALLOWED_ORIGINS` env-р whitelist; OPTIONS preflight 204 буцаах middleware; зөвхөн зөвшөөрөгдсөн Origin-д Access-Control-Allow-Credentials</td></tr>
+    <tr><td>SQL injection audit</td><td>Бүх `$queryRaw`/`$executeRaw` дуудлагыг шалгасан (`Prisma.sql` + параметр); `$queryRawUnsafe` ашиглалт 0; шинэ raw SQL-д нь rule</td></tr>
+    <tr><td>Webhook signature</td><td>`STRIPE_WEBHOOK_SECRET` (Stripe HMAC + timestamp tolerance) + `PUSH_WEBHOOK_HMAC_SECRET` (X-Hub-Signature-256); failed → 400</td></tr>
+    <tr><td>Audit log + retention</td><td>`AuditLog` model + бүх security event; `/api/cron/audit-log-retention` (default 365д), батч DELETE 5000/run</td></tr>
+  </table>
+
+  <div class="footer-page">Linksy · 07</div>
+</section>
+
+<!-- ============== 7b. WHAT'S NEW SINCE APRIL — Part 2: Real-time/Messaging/Media ============== -->
+<section class="page">
+  <p class="eyebrow">5 · Танилцуулгаас хойш нэмэгдсэн боломжууд (2/3)</p>
+  <h2>Real-time, мессеж, дуу/видео, push, медиа</h2>
+  <p>
+    Хоёрдугаар хэсэг — танилцуулгад "WebSocket-аар real-time chat болгоно" гэж <em>ирээдүйн боломж</em>-оор
+    жагсаасан зүйлс бүгд <strong>бодитоор хэрэгжсэн</strong>: SSE-based real-time backbone, end-to-end шифрлэлт,
+    WebRTC дуу/видео, олон сувгийн push мэдэгдэл, бүрэн медиа pipeline.
+  </p>
+
+  <h3>📡 Real-time backbone (SSE + Redis Pub/Sub)</h3>
+  <div class="grid-2">
+    <div class="card">
+      <strong>5 ширхэг live stream</strong>
+      <p>`/messages/stream` (шинэ мессеж), `/typing/stream` (бичиж байна), `/notifications/stream` (like/comment/follow), `/conversations/stream` (DM list), `/presence/stream` (online dot).</p>
+    </div>
+    <div class="card">
+      <strong>Olon Node-instance fan-out</strong>
+      <p>`notification-bus.ts`, `conversation-message-bus.ts`, `user-inbox-bus.ts`, `presence-bus.ts`, `typing-bus.ts`, `call-signal-bus.ts` — Redis Pub/Sub давхарга.</p>
+    </div>
+    <div class="card">
+      <strong>Online presence</strong>
+      <p>Heartbeat 30s + Redis SETEX 90s TTL, sendBeacon offline-д; chat header дээр green dot + "Active now" / "Last seen Xm ago".</p>
+    </div>
+    <div class="card">
+      <strong>Read receipts шууд</strong>
+      <p>`markRead` дараа `convmsg:read` event publish, sender UI-д "Read" tick instant харагдана (өмнөх 30s polling → ~50ms SSE push).</p>
+    </div>
+  </div>
+
+  <h3>🔒 End-to-End Encryption + WebRTC + Disappearing</h3>
+  <div class="grid-3">
+    <div class="card">
+      <strong>E2EE (ECDH + AES-GCM)</strong>
+      <p>Web Crypto P-256 ECDH + X3DH-style key agreement + AES-256-GCM. Private key browser IndexedDB-д л; сервер plaintext татгалзана, `E2EEIdentity` + `OneTimePreKey` (atomic OPK consume).</p>
+    </div>
+    <div class="card">
+      <strong>WebRTC дуу/видео</strong>
+      <p>1:1, SDP/ICE Redis pub/sub signaling, coturn HMAC-SHA1 ephemeral creds, missed-call cleanup cron (RINGING&gt;45s → MISSED, ACCEPTED&gt;4h → ENDED), CallSurface UI.</p>
+    </div>
+    <div class="card">
+      <strong>Disappearing modes</strong>
+      <p>`OFF / TIMED / AFTER_READ`, 60..604800 сек, per-message snapshot тул policy сольсны дараа хуучин мессеж бүрэн үлдэнэ; `/api/cron/messages-cleanup` minute-grain delete + SSE notify.</p>
+    </div>
+  </div>
+
+  <h3>💬 Messaging нэмэгдсэн feature-ууд</h3>
+  <ul>
+    <li><strong>Message reactions, reply, edit/delete tracking</strong> (`MessageReaction`, `Message.replyToId`, `editedAt`, `deletedAt`)</li>
+    <li><strong>Group chat + roles</strong> — `ConversationMember.role` (ADMIN/MEMBER), pinned messages, member block, joined time, group rename</li>
+    <li><strong>Voice messages</strong> + дуудлагын history, conversation search, pin, leave, block</li>
+    <li><strong>Typing indicator + member-by-member presence</strong>, message request inbox (allowMessageRequests)</li>
+  </ul>
+
+  <h3>🔔 Multi-channel push + Media pipeline</h3>
+  <div class="grid-2">
+    <div class="card">
+      <strong>3 push сувгийн dispatcher</strong>
+      <p>Web Push (VAPID), FCM HTTP v1 (Android — service-account RS256 JWT, `messages:send`), APNs HTTP/2 (iOS — token-based ES256 JWT). Auto-cleanup: 410 / `BadDeviceToken` / `UNREGISTERED`.</p>
+    </div>
+    <div class="card">
+      <strong>Quiet hours per-TZ + Categories</strong>
+      <p>`User.quietHoursStart/End/Timezone` (IANA TZ), minute-of-day window, midnight wrap. `alerting` vs `silent` category — Web/APNs/FCM 3-тоо тус тус mapping.</p>
+    </div>
+    <div class="card">
+      <strong>Бүрэн медиа pipeline</strong>
+      <p>Cloud storage (local/S3/R2/Blob), CDN base URL, magic-byte MIME validator, Sharp limitInputPixels, video duration check + FFmpeg transcode, EXIF strip, NSFW/virus moderation hook (ClamAV).</p>
+    </div>
+    <div class="card">
+      <strong>Upload security</strong>
+      <p>Per-user rate limit, alt text заавал accessibility, file-type magic detection, dimension check (DoS protection), audit log per upload.</p>
+    </div>
+  </div>
+
+  <div class="footer-page">Linksy · 08</div>
+</section>
+
+<!-- ============== 7c. WHAT'S NEW SINCE APRIL — Part 3: Social/Discovery/DevOps ============== -->
+<section class="page">
+  <p class="eyebrow">5 · Танилцуулгаас хойш нэмэгдсэн боломжууд (3/3)</p>
+  <h2>Social граф, нээлт, performance, infrastructure</h2>
+  <p>
+    Гуравдугаар хэсэг — Social граф, контент нээлт, creator-ийн зэвсэг, performance, DevOps/observability болон GDPR
+    нийцэл. Танилцуулгад "future" гэж жагсаасан recommendation, creator analytics, mobile PWA — бүгд бодит код болсон.
+  </p>
+
+  <h3>🕸 Social граф ба контентын өргөтгөл</h3>
+  <div class="grid-2">
+    <div class="card">
+      <strong>Hashtag · Mention · Repost · Pin · Draft · Series</strong>
+      <p>`Hashtag` + `PostHashtag` (trending API + хуудас), `Mention` (post/story аль аль нь), Twitter-style `Repost` (idempotent upsert), 3-хүртэлх `PinnedPost`, `Draft` бичих + scheduling, `PostSeries` reorder.</p>
+    </div>
+    <div class="card">
+      <strong>Story өргөтгөл</strong>
+      <p>`StoryHighlight` + items, `StoryReaction`, `StoryCollaborator`, stickers, `Story.musicTrack`, `Story.playbackMode`, `Story.location`, expiry reminder cron.</p>
+    </div>
+    <div class="card">
+      <strong>Polls + Comment moderation + Alt</strong>
+      <p>`Poll` + `PollVote` (per-post poll), `CommentModerationStatus` enum (хүлээгдэж буй comment-уудыг pre-approve), media-д alt text заавал accessibility.</p>
+    </div>
+    <div class="card">
+      <strong>Close Circle · Favorite · Block · Mute · Report</strong>
+      <p>`CloseCircle` (private audience), `Favorite` (хувийн closer-than-friend), `UserBlock` (cascade unfollow + hide), `Mute` (posts/stories/messages/notifications тус тусын flag), 3-төрлийн `Report`.</p>
+    </div>
+  </div>
+
+  <h3>🔍 Discovery + Creator зэвсэг</h3>
+  <div class="grid-2">
+    <div class="card">
+      <strong>Search + history + recommended</strong>
+      <p>Users + posts + hashtags + locations advanced filters, `SearchHistory` DB-д, `/api/user/recommended-follows` нь FoF×3 + категори×2 + engagement×1.5 + log-follower heuristic ranker.</p>
+    </div>
+    <div class="card">
+      <strong>Creator Mode + XP + Leaderboard</strong>
+      <p>Гэйм-механик: POST=10, LIKE=2, COMMENT=3, FOLLOW=4, DAILY=5 XP; Subscription tier multiplier; Redis leaderboard; level + badge + border unlock; verification request (blue check).</p>
+    </div>
+    <div class="card">
+      <strong>Creator Dashboard (real-data)</strong>
+      <p>PostView/Like/Comment/SavedPost/Repost/Follow real aggregation, period delta %, daily views chart (raw SQL `DATE_TRUNC`), top-5 posts, engagement breakdown, range 7d/30d/90d.</p>
+    </div>
+    <div class="card">
+      <strong>Feedback + Verification + Subscription</strong>
+      <p>`Feedback` model (category + status, 10/h limit, audit log), `VerificationRequest` (30-day cooldown), `Subscription` tier (FREE/PLUS/PRO/ELITE).</p>
+    </div>
+  </div>
+
+  <h3>⚡ Performance + Email + Cron + i18n + GDPR</h3>
+  <table>
+    <tr><th>Систем</th><th>Хэрэгжилт</th></tr>
+    <tr><td>Performance</td><td>react-window virtual scroll, code split (feed-screen → 16+ sub-component), PWA manifest + service worker, Offline mode (IndexedDB + Background Sync retry queue), bundle analyzer, hover prefetch (intent-based), Redis entity cache</td></tr>
+    <tr><td>Email pipeline</td><td>BullMQ queue (Redis fallback), worker script, React-email template 5 ширхэг (welcome/verify/reset/login-alert/digest), Daily/Weekly digest cadence, login-on-new-device alert</td></tr>
+    <tr><td>Cron jobs (7)</td><td>email-digest, publish-scheduled-posts, story-expiry-reminders, calls-cleanup (миссед/ended), messages-cleanup (disappearing delete), audit-log-retention, hard-delete-users (GDPR grace)</td></tr>
+    <tr><td>i18n 6 хэл + RTL</td><td>en · mn · zh · ja · ko · ar (RTL); `User.preferredLanguage` сервер sync; email/push текстийн орчуулга (mn/en бэлэн, бусад copy-back)</td></tr>
+    <tr><td>GDPR компэлайнс</td><td>Cookie consent banner (Accept all / Essential only), `/legal/privacy` + `/legal/terms`, `POST /api/user/export-data`, `accountDeletionRequestedAt` + grace cron (30д default)</td></tr>
+    <tr><td>Observability</td><td>Sentry (server + edge + client), Pino structured logs, `web-vitals` RUM endpoint (POST /api/metrics/web-vitals), Health (`/api/health`) + Readiness (`/api/health/ready`), N+1 query analyzer script, CI schema drift detector</td></tr>
+  </table>
+
+  <h3>🚀 DevOps + infra (өмнө нь огт байгаагүй)</h3>
+  <ul>
+    <li><strong>Docker</strong> — Multi-stage `Dockerfile` (Next standalone, non-root user), `docker-compose.yml` (Postgres + coturn), `.env.example` 200+ мөр заавартай</li>
+    <li><strong>CI/CD</strong> — GitHub Actions: Postgres service, Prisma generate + migrate deploy, shadow DB drift detection (`migrate diff --exit-code`), typecheck, build</li>
+    <li><strong>Database</strong> — Pool config (env-аар max/idle/connect timeout), PgBouncer заавар, `scripts/pg-backup.example.sh`</li>
+    <li><strong>Routes</strong> — `/[username]` public profile, `/hashtag/[tag]`, `/explore`, `/search`, `/post/[id]`, `/story/[id]`, `/series/[id]`, `/drafts`, `/saved`, `/auth/forgot-password`, `/auth/reset/[token]`, `/auth/verify-email`, `/legal/privacy`, `/legal/terms`, `/settings/billing`, `/offline`, `not-found/error/global-error/loading`</li>
+    <li><strong>Refactor</strong> — `feed-screen.tsx` → 16+ sub-component (`components/feed/`), route inconsistency `/profile?id=` → `/{username}` + RESERVED_USERNAME_PATHS, landing inline style → `landing.css`, mock data 6 дэлгэцээс бүхэлд нь устгасан</li>
+    <li><strong>Secrets management</strong> — `docs/SECRETS_ROTATION.md` runbook (JWT, refresh, CRON, Stripe, Redis товч rotate), Sentry DSN, FCM/APNs/VAPID, S3/R2/Blob тус тусын secret env</li>
+  </ul>
+
+  <div class="footer-page">Linksy · 09</div>
+</section>
+
+<!-- ============== 8. PROS + CONS ============== -->
+<section class="page">
+  <p class="eyebrow">6 · Давуу тал ба сул тал</p>
+  <h2>Шударга үнэлгээ</h2>
+  <p style="margin-bottom: 8px; font-size: 11.5px;">
+    Танилцуулгаас хойш хийгдсэн ажлын <strong>хэмжээ</strong>-г үнэлэхэд апп нэг сарын дотор 8 model-той hobby project-оос
+    50+ model-той, 200+ endpoint-той, 7 cron job-той, 12-давхаргат хамгаалалттай <strong>production-readiness 80%</strong>
+    түвшинд гарсан. Доорх давуу/сул тал шударгаар:
+  </p>
+  <p>
+    Дараах хуудсанд төслийн давуу болон сул талыг шударгаар үнэлж танилцуулъя. Эхлээд давуу талуудаас:
+  </p>
+
+  <div class="pros">
+    <strong>🟢 Давуу талууд</strong>
+    <ul>
+      <li><strong>Бүтэн тех стек бодитоор хэрэгжсэн</strong> — frontend, backend, real-time, push, calls, encryption бүгд нэг кодын сан дотор. CI/CD автомат, Docker-аар бүтэн орчин.</li>
+      <li><strong>Аюулгүй байдалд гүн анхаарсан</strong> — End-to-end encryption (Web Crypto), defense-in-depth (CSP, CSRF, brute-force, password policy, refresh rotation), SQL injection эрсдэлгүй.</li>
+      <li><strong>Бодит цагийн боломжууд</strong> — SSE + Redis Pub/Sub multi-instance scale-д бэлэн. WebRTC дуу/видео coturn-той production-түвшний. Multi-channel push (Web/Android/iOS).</li>
+      <li><strong>Гэйм-механик нэвтрүүлсэн</strong> — Creator Mode XP систем (POST=10, LIKE=2, COMMENT=3, FOLLOW=4 + subscription multiplier) хэрэглэгчийн идэвхийг нэмэгдүүлдэг (gamification).</li>
+      <li><strong>Олон улсын стандарт</strong> — i18n 6 хэлтэй (RTL дэмжлэгтэй), GDPR compliance (cookie consent, data export, privacy policy/terms).</li>
+      <li><strong>Ажиглалт ба чанарын баталгаа</strong> — Sentry + pino + Web Vitals, өөрөө бичсэн N+1 query analyzer (CI integration), schema drift detection.</li>
+    </ul>
+  </div>
+
+  <p style="margin-top: 12px;">Гэхдээ мөн адил шударгаар сул талуудаа ч хэлэх ёстой:</p>
+
+  <div class="cons">
+    <strong>🔴 Сул талууд</strong>
+    <ul>
+      <li><strong>Test суурь дутуу</strong> — Vitest/Playwright config байхгүй, `*.test.ts` 0 ширхэг. Refactor regression-ийг баталгаатай барихгүй. <em>Шийдэл:</em> Vitest + supertest, 60%+ coverage.</li>
+      <li><strong>Stripe payment бүрэн биш</strong> — Subscription model байгаа ч `stripeCustomerId/status/currentPeriodEnd` талбаргүй. Webhook scaffold (HMAC verify) бэлэн ч жинхэнэ event handler хийгдээгүй.</li>
+      <li><strong>E2EE хязгаарлагдмал threat model</strong> — Per-message forward secrecy байхгүй (Double Ratchet эс хэрэгжүүлсэн). Single device per user. Safety number / QR verification UX байхгүй.</li>
+      <li><strong>Group call хийгдээгүй</strong> — 1:1 only. Group call SFU (LiveKit / mediasoup) шаардана.</li>
+      <li><strong>SEO талаас сул</strong> — Page-тус OpenGraph/Twitter card байхгүй, sitemap.ts, robots.txt, dynamic OG image (`/api/og/[postId]`) дутуу.</li>
+      <li><strong>Component refactor дутуу</strong> — `messages-screen.tsx` (123 KB), `settings-screen.tsx` (~119 KB) гэх мэт нэг файл маш том. Maintainability буурдаг.</li>
+      <li><strong>AI screen placeholder</strong> — провайдер integration хараахан хийгдээгүй. Audience demographics dashboard-д "Coming soon".</li>
+    </ul>
+  </div>
+
+  <div class="footer-page">Linksy · 10</div>
+</section>
+
+<!-- ============== 9. PROGRESS + ROADMAP ============== -->
+<section class="page">
+  <p class="eyebrow">7 · Хийгдсэн ажил ба цаашдын төлөвлөгөө</p>
+  <h2>Тоон үзүүлэлт ба дараагийн алхам</h2>
+  <p>Эцэст нь нийт хийгдсэн ажлын тоон үзүүлэлт болон цаашид хийх ажлуудыг танилцуулъя:</p>
+
+  <div class="stat">
+    <div class="stat-card"><div class="num">200+</div><div class="label">API endpoint</div></div>
+    <div class="stat-card"><div class="num">40+</div><div class="label">Prisma model</div></div>
+    <div class="stat-card"><div class="num">6</div><div class="label">Хэл (i18n)</div></div>
+    <div class="stat-card"><div class="num">3</div><div class="label">Push channel</div></div>
+  </div>
+
+  <h3>Сүүлд хийгдсэн томоохон ажлууд</h3>
+  <table>
+    <tr><th>Ажил</th><th>Статус</th></tr>
+    <tr><td>Creator Mode + XP систем + leaderboard</td><td><span class="badge-done">DONE</span></td></tr>
+    <tr><td>E2EE migration deploy + landing.css extract</td><td><span class="badge-done">DONE</span></td></tr>
+    <tr><td>WebRTC calling + coturn + cleanup cron</td><td><span class="badge-done">DONE</span></td></tr>
+    <tr><td>Disappearing messages (TIMED · AFTER_READ)</td><td><span class="badge-done">DONE</span></td></tr>
+    <tr><td>Multi-channel push dispatcher (Web · FCM · APNs)</td><td><span class="badge-done">DONE</span></td></tr>
+    <tr><td>Mock data устгал · creator dashboard real data</td><td><span class="badge-done">DONE</span></td></tr>
+    <tr><td>Refresh token rotation · brute-force protection</td><td><span class="badge-done">DONE</span></td></tr>
+    <tr><td>Cookie consent · GDPR data export</td><td><span class="badge-done">DONE</span></td></tr>
+    <tr><td>CSRF · Security headers · CSP</td><td><span class="badge-done">DONE</span></td></tr>
+    <tr><td>Test suite (Vitest + Playwright)</td><td><span class="badge-todo">TODO</span></td></tr>
+    <tr><td>Stripe payment integration</td><td><span class="badge-todo">TODO</span></td></tr>
+    <tr><td>Component refactor (messages/settings/profile)</td><td><span class="badge-wip">WIP</span></td></tr>
+  </table>
+
+  <h3>Цаашдын ажлууд</h3>
+  <p>Хамгаалалтын дараа дараах ажлуудыг үе шаттайгаар хэрэгжүүлэхээр төлөвлөж байна:</p>
+  <div class="roadmap">
+    <div class="roadmap-item">
+      <strong>Vitest + Playwright тест суурь</strong>
+      <p>Auth, posts, messages, e2ee endpoint-уудад unit + integration тест. CI дээр coverage 60%+ заавал.</p>
+    </div>
+    <div class="roadmap-item">
+      <strong>Stripe payment integration</strong>
+      <p>Subscription schema (`stripeCustomerId`, `currentPeriodEnd`, `status`), webhook event handler, Settings → Billing UI, /pricing page.</p>
+    </div>
+    <div class="roadmap-item">
+      <strong>Том component-уудыг refactor хийх</strong>
+      <p>messages-screen → conv-list, composer, voice-recorder, bubble; settings-screen → 9 sub-page; profile-screen → header/grid/highlights/edit-modal.</p>
+    </div>
+    <div class="roadmap-item">
+      <strong>SEO + Dynamic OG image</strong>
+      <p>app/sitemap.ts, robots.txt, /api/og/[postId] (Next ImageResponse), per-page openGraph + twitter card, canonical URL.</p>
+    </div>
+    <div class="roadmap-item">
+      <strong>Group call (SFU)</strong>
+      <p>LiveKit эсвэл mediasoup-аар олон-оролцогчтой видео дуудлага; одоогийн 1:1 P2P-ийг хадгалж SFU-г сонголтоор.</p>
+    </div>
+    <div class="roadmap-item">
+      <strong>libsignal-аар E2EE сайжруулах</strong>
+      <p>Double Ratchet (per-message forward secrecy), multi-device, safety number verification UX.</p>
+    </div>
+  </div>
+
+  <div class="quote-box">
+    <p style="font-size: 12.5px; color: #fff; margin: 0 0 8px;">
+      <strong>Дүгнэлт.</strong> Linksy нь дипломын ажлын хүрээнд production-түвшний 80%-ийг гүйцээсэн.
+      Creator mode, аюулгүй байдал, real-time, multi-platform push, end-to-end encryption бүгд бодитоор
+      ажиллаж байна. Үлдсэн 20% — тест, payment, refactor, SEO нь хамгаалалтын дараа төлөвлөгөөт алхамаар хийгдэнэ.
+    </p>
+    <p style="font-size: 13.5px; color: #fff; margin: 0; font-weight: 700;">
+      Сонссон танаа баярлалаа. Асуулт байвал хариулахад бэлэн байна.
+    </p>
+  </div>
+
+  <div class="footer-page">Linksy · 11 · Баярлалаа</div>
+</section>
+
+</body>
+</html>
