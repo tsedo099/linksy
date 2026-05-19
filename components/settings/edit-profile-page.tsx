@@ -34,7 +34,6 @@ export function EditProfilePage({
   const bioVal = watch("bio");
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [sendingVerification, setSendingVerification] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -47,27 +46,6 @@ export function EditProfilePage({
     setAvatarUrl(me?.avatarUrl ?? null);
   }, [me, reset]);
 
-  async function sendVerificationEmail() {
-    if (!me || me.emailVerified || sendingVerification) return;
-    setSendingVerification(true);
-
-    try {
-      const response = await fetch("/api/auth/send-verification", {
-        method: "POST",
-      });
-      const data = (await response.json().catch(() => null)) as { error?: string; message?: string } | null;
-
-      if (!response.ok) {
-        throw new Error(data?.error ?? "Could not send verification email.");
-      }
-
-      onToast("success", data?.message ?? "Verification email sent.");
-    } catch (error) {
-      onToast("error", error instanceof Error ? error.message : "Could not send verification email.");
-    } finally {
-      setSendingVerification(false);
-    }
-  }
 
   async function handleAvatarChange(file: File | null) {
     if (!file) {
@@ -195,21 +173,6 @@ export function EditProfilePage({
         <div className="sg-field">
           <span className="sg-field-lbl">Email</span>
           <input className="sg-field-in sg-field-in--muted" value={me?.email ?? ""} readOnly />
-          <div className="sg-email-meta">
-            <span className={`sg-email-badge${me?.emailVerified ? " sg-email-badge--ok" : " sg-email-badge--warn"}`}>
-              {me?.emailVerified ? "Verified" : "Not verified"}
-            </span>
-            {!me?.emailVerified ? (
-              <button
-                type="button"
-                className="sg-inline-btn"
-                onClick={sendVerificationEmail}
-                disabled={sendingVerification || !me}
-              >
-                {sendingVerification ? "Sending..." : "Verify email"}
-              </button>
-            ) : null}
-          </div>
         </div>
       </Card>
 
