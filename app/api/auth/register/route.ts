@@ -14,6 +14,7 @@ import { isValidIanaTimezone } from "@/lib/push/quiet-hours";
 import { pwnedPasswordIssue } from "@/lib/password-policy";
 import { signupsTotal } from "@/lib/metrics";
 import { withMetrics } from "@/lib/with-metrics";
+import { logger } from "@/lib/logger";
 
 export const POST = withMetrics("/api/auth/register", async (req: NextRequest) => {
   try {
@@ -99,7 +100,17 @@ export const POST = withMetrics("/api/auth/register", async (req: NextRequest) =
 
     signupsTotal.inc({ channel: "email" });
     return response;
-  } catch {
+  } catch (err) {
+    const e = err as { code?: string; message?: string; meta?: unknown };
+    logger.error(
+      {
+        scope: "auth.register",
+        errCode: e.code,
+        errMessage: e.message?.slice(0, 500),
+        errMeta: e.meta,
+      },
+      "register.failed",
+    );
     return NextResponse.json(
       { error: "Server error." },
       { status: 500 }
