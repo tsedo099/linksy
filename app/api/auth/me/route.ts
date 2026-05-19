@@ -443,6 +443,8 @@ export const DELETE = withMetrics("/api/auth/me", async (req: NextRequest) => {
         where: { id: user.id },
         data: { accountDeletionRequestedAt: new Date() },
       });
+      const { invalidateUserStatusCache } = await import("@/lib/auth");
+      invalidateUserStatusCache(user.id);
     } catch (error) {
       if (isMissingAccountDeletionColumn(error)) {
         return NextResponse.json(

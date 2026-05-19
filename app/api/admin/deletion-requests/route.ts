@@ -122,6 +122,8 @@ export async function PATCH(req: NextRequest) {
     where: { id: userId },
     data: { accountDeletionRequestedAt: null },
   });
+  const { invalidateUserStatusCache } = await import("@/lib/auth");
+  invalidateUserStatusCache(userId);
 
   writeAuditLog({
     action: "MODERATOR_DELETION_CANCEL",

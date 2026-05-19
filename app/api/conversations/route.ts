@@ -244,7 +244,16 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ conversations, requests });
+  return NextResponse.json(
+    { conversations, requests },
+    {
+      // Per-viewer payload — browser cache only. SSE pushes activity
+      // events; this 3s window deduplicates the backup poll without
+      // hiding fresh messages from the active user (they'd see the SSE
+      // push before the cache expires anyway).
+      headers: { "Cache-Control": "private, max-age=3" },
+    },
+  );
 }
 
 // POST /api/conversations - start a conversation

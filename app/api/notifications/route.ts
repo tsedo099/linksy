@@ -13,25 +13,32 @@ export async function GET(req: NextRequest) {
   const blockedIds = await getBlockedUserIds(me.userId);
   const realNotificationWhere = await notificationFeedWhere(me.userId, blockedIds);
 
-  const notifications = await prisma.notification.findMany({
-    where: realNotificationWhere,
-    orderBy: { createdAt: "desc" },
-    take: 21,
-    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
-    include: {
-      from: {
-        select: {
-          id: true,
-          username: true,
-          displayName: true,
-          avatarUrl: true,
-          followers: { where: { followerId: me.userId }, select: { followerId: true } },
+  // List + unread count are independent — fire them in parallel so the
+  // polling endpoint pays one round trip instead of two.
+  const [notifications, unreadCount] = await Promise.all([
+    prisma.notification.findMany({
+      where: realNotificationWhere,
+      orderBy: { createdAt: "desc" },
+      take: 21,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      include: {
+        from: {
+          select: {
+            id: true,
+            username: true,
+            displayName: true,
+            avatarUrl: true,
+            followers: { where: { followerId: me.userId }, select: { followerId: true } },
+          },
         },
+        post: { select: { id: true, mediaUrls: true } },
+        story: { select: { id: true, mediaUrl: true } },
       },
-      post: { select: { id: true, mediaUrls: true } },
-      story: { select: { id: true, mediaUrl: true } },
-    },
-  });
+    }),
+    prisma.notification.count({
+      where: { ...realNotificationWhere, read: false },
+    }),
+  ]);
 
   const hasMore = notifications.length > 20;
   const rawItems = hasMore ? notifications.slice(0, 20) : notifications;
@@ -83,13 +90,17 @@ export async function GET(req: NextRequest) {
     };
   });
 
-  const unreadCount = await prisma.notification.count({
-    where: { ...realNotificationWhere, read: false },
-  });
-
-  return NextResponse.json({
-    notifications: items,
-    nextCursor: hasMore ? items[items.length - 1]?.id ?? null : null,
-    unreadCount,
-  });
+  return NextResponse.json(
+    {
+      notifications: items,
+      nextCursor: hasMore ? items[items.length - 1]?.id ?? null : null,
+      unreadCount,
+    },
+    {
+      // Per-viewer payload — browser-only cache. SSE-driven realtime is
+      // the primary push path; this 5s window only short-circuits the
+      // backup poll between live events.
+      headers: { "Cache-Control": "private, max-age=5" },
+    },
+  );
 }

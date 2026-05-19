@@ -33,6 +33,41 @@ async function clearStaleAuthCookies(req: NextRequest): Promise<void> {
 }
 
 /**
+ * Per-instance cache of the User-status row keyed by `userId`. Every API
+ * Route Handler calls `getUser` → `prisma.user.findUnique` to confirm the
+ * account isn't deleted/suspended. The actual {accountDeletionRequestedAt,
+ * suspendedUntil} pair barely changes (only when the user requests delete
+ * or an admin suspends), so a short TTL caches it across the storm of
+ * polled requests a single page generates. A new login still hits the DB
+ * (different access token, same cache key — but the lookup is cheap).
+ *
+ * Invalidate explicitly when one of the cached fields is mutated (admin
+ * suspend, account-delete request, restore). The cache is per serverless
+ * instance — drift across instances is bounded by USER_STATUS_TTL_MS.
+ */
+const USER_STATUS_TTL_MS = 15_000;
+type UserStatusRow = { accountDeletionRequestedAt: Date | null; suspendedUntil: Date | null };
+type UserStatusEntry = { row: UserStatusRow | null; expiresAt: number };
+const userStatusCache = new Map<string, UserStatusEntry>();
+
+export function invalidateUserStatusCache(userId: string) {
+  userStatusCache.delete(userId);
+}
+
+async function loadUserStatus(userId: string): Promise<UserStatusRow | null> {
+  const now = Date.now();
+  const hit = userStatusCache.get(userId);
+  if (hit && hit.expiresAt > now) return hit.row;
+
+  const row = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { accountDeletionRequestedAt: true, suspendedUntil: true },
+  });
+  userStatusCache.set(userId, { row, expiresAt: now + USER_STATUS_TTL_MS });
+  return row;
+}
+
+/**
  * Resolves the current user for API Route Handlers: verifies short-lived access JWT,
  * otherwise rotates refresh token + re-sets cookies via `cookies()` when valid.
  */
@@ -41,13 +76,7 @@ export async function getUser(req: NextRequest): Promise<JwtPayload | null> {
   const fromAccess = access ? verifyAccessToken(access) : null;
   if (fromAccess) {
     try {
-      const row = await prisma.user.findUnique({
-        where: { id: fromAccess.userId },
-        select: {
-          accountDeletionRequestedAt: true,
-          suspendedUntil: true,
-        },
-      });
+      const row = await loadUserStatus(fromAccess.userId);
       if (!row || row.accountDeletionRequestedAt != null) {
         await clearStaleAuthCookies(req);
         return null;

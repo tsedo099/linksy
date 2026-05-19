@@ -68,6 +68,8 @@ export async function POST(
       suspendedByUserId: me.userId,
     },
   });
+  const { invalidateUserStatusCache } = await import("@/lib/auth");
+  invalidateUserStatusCache(id);
 
   writeAuditLog({
     action: "MODERATOR_USER_SUSPEND",
@@ -117,6 +119,8 @@ export async function DELETE(
     where: { id },
     data: { suspendedUntil: null },
   });
+  const { invalidateUserStatusCache } = await import("@/lib/auth");
+  invalidateUserStatusCache(id);
 
   writeAuditLog({
     action: "MODERATOR_USER_UNSUSPEND",
