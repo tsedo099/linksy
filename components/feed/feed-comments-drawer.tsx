@@ -6,13 +6,6 @@ import { MentionRichText } from "@/components/mention-rich-text";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-const BASE_COMMENTS = [
-  { id: 1, user: "Elena Vance", initials: "EV", grad: AVATAR_PLACEHOLDER_GRADIENT, text: "This is absolutely stunning! 🔥", time: "2h", liked: false },
-  { id: 2, user: "Priya Sharma", initials: "PS", grad: AVATAR_PLACEHOLDER_GRADIENT, text: "Love the concept behind this!", time: "3h", liked: true },
-  { id: 3, user: "Carlos Ruiz", initials: "CR", grad: AVATAR_PLACEHOLDER_GRADIENT, text: "The composition is perfect 👌", time: "5h", liked: false },
-  { id: 4, user: "Noah Blake", initials: "NB", grad: AVATAR_PLACEHOLDER_GRADIENT, text: "Mind-blowing work as always!", time: "8h", liked: false },
-];
-
 type CommentItem = {
   id: number | string;
   user: string;
@@ -43,8 +36,10 @@ export function CommentsDrawer({ onClose, postId, postAuthor, postCaption, postG
 }) {
   const { locale } = useLanguagePreferences();
   const [input, setInput] = useState("");
-  const [comments, setComments] = useState<CommentItem[]>(BASE_COMMENTS);
-  const [likedIds, setLikedIds] = useState<Set<CommentItem["id"]>>(new Set(BASE_COMMENTS.filter(c => c.liked).map(c => c.id)));
+  // Start empty — the BASE_COMMENTS placeholder list was leaking into prod
+  // and looked like fake seed data on real users' posts.
+  const [comments, setComments] = useState<CommentItem[]>([]);
+  const [likedIds, setLikedIds] = useState<Set<CommentItem["id"]>>(new Set());
   const [preview, setPreview] = useState<ModerationPreview | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
