@@ -16186,3 +16186,48 @@ html[data-theme="light"] .rk-row:hover * {
     padding-right: 0.9rem !important;
   }
 }
+
+/* ── Final overrides: post column width, centered filter pills, navbar hover ─
+   These sit at the end of the cascade so earlier conflicting rules can't undo
+   them. */
+
+/* 1) Post column width bumped to 600px — 540 felt cramped, 720 felt wide. */
+.feed-shell--home .feed-posts-col {
+  max-width: 600px !important;
+}
+
+/* 2) Centered filter pills: drop the 3-column grid and let the pill row
+   sit in the middle. With the title block hidden, the grid was leaving a
+   visible gap on the left that pushed the pills off-center. */
+.feed-shell--home .feed-col-header-inner {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 1rem !important;
+  grid-template-columns: none !important;
+}
+.feed-shell--home .feed-title-block { display: none !important; }
+.feed-shell--home .feed-filter-bar {
+  margin: 0 auto !important;
+  justify-content: center !important;
+}
+
+/* 3) Navbar hover expansion: force 14rem on hover/focus/pinned regardless of
+   any earlier .feed-shell--home override that pinned the width to the rail
+   size. */
+@media (hover: hover) {
+  .feed-shell--home .feed-sidenav--left:hover,
+  .feed-shell--home .feed-sidenav--left:focus-within,
+  .feed-shell--home .feed-sidenav--left.feed-sidenav--pinned {
+    width: 14rem !important;
+    box-shadow: 18px 0 28px -30px rgba(0, 0, 0, 0.72) !important;
+  }
+  .feed-shell--home .feed-sidenav--left:hover .nav-inline-label,
+  .feed-shell--home .feed-sidenav--left:focus-within .nav-inline-label,
+  .feed-shell--home .feed-sidenav--left.feed-sidenav--pinned .nav-inline-label {
+    max-width: 9rem !important;
+    opacity: 1 !important;
+    transform: translateX(0) !important;
+  }
+}
