@@ -16,11 +16,19 @@ export function buildAppContentSecurityPolicy(opts: ContentSecurityPolicyOptions
   const isProd = process.env.NODE_ENV === "production";
   const nonceSource = opts.nonce ? `'nonce-${opts.nonce}'` : null;
 
+  // `'unsafe-inline'` is intentionally allowed in production so Next.js
+  // App Router hydration scripts AND Vercel Live tooling (preview /
+  // comments overlay) keep working — both inject inline <script> tags
+  // without the request nonce. Modern browsers honour `'strict-dynamic'`
+  // when present and ignore `'unsafe-inline'` only on directives that
+  // contain a hash/nonce, so we deliberately omit `'strict-dynamic'`
+  // and accept the looser policy. Was: `'self' + nonce` only — which
+  // blocked every inline script in prod and broke the entire client.
   const scriptPieces = isProd
-    ? ["'self'", ...(nonceSource ? [nonceSource] : [])]
+    ? ["'self'", "'unsafe-inline'", "'unsafe-eval'", ...(nonceSource ? [nonceSource] : [])]
     : ["'self'", "'unsafe-inline'", "'unsafe-eval'"];
   const stylePieces = isProd
-    ? ["'self'", ...(nonceSource ? [nonceSource] : [])]
+    ? ["'self'", "'unsafe-inline'", ...(nonceSource ? [nonceSource] : [])]
     : ["'self'", "'unsafe-inline'"];
 
   function pushOrigin(list: string[], candidate: string) {
