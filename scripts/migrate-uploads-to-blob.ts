@@ -110,6 +110,9 @@ async function main(): Promise<void> {
       select: { id: true, mediaUrl: true },
     });
     for (const m of fragmentMessages) {
+      // mediaUrl is nullable in the schema but our `startsWith` filter
+      // guarantees a value here — narrow for the type checker.
+      if (m.mediaUrl == null) continue;
       const fragment = m.mediaUrl.slice(oldUrl.length);
       await prisma.message.update({
         where: { id: m.id },
