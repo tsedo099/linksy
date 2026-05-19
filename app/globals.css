@@ -12186,34 +12186,39 @@ html[data-theme="light"] .cd-drawer {
   flex-shrink: 0;
 }
 
-/* Home Base cyber feed */
+/* Home Base cyber feed — inherits theme + accent from the user's
+   appearance settings. The earlier block hardcoded cyan/violet accents
+   AND text colours, so users changing appearance in /settings saw zero
+   change on /home (the cyber overrides won the cascade). We now keep
+   the dark-mode surface colours for the cyber aesthetic but flow the
+   user-chosen accent + global text through. The light-theme block
+   later in this file fully takes over for light mode. */
 .feed-shell--home {
   --feed-rail-size: 5.5rem;
   --feed-bg: #070a0f;
   --feed-surface: #11161d;
   --feed-card: #11161d;
   --feed-card-soft: #151b23;
-  --feed-text: #f7fbff;
-  --feed-text-muted: #7f8794;
+  /* Drop the locked white/muted text so the user's theme controls win.
+     The dark surfaces above are still readable with the default text. */
+  --feed-text: var(--app-text);
+  --feed-text-muted: var(--app-text-muted);
   --feed-icon: #6f7580;
   --feed-icon-hover: #b6f7ff;
   --feed-border: rgba(132, 151, 168, 0.16);
-  --feed-accent: #7cecff;
-  --feed-accent-secondary: #a88cff;
-  --feed-accent-rgb: 124 236 255;
+  /* Accent + secondary now follow the global accent picker, so an accent
+     swap in Settings > Appearance actually colours buttons / active tabs
+     on /home. */
+  --feed-accent: var(--app-accent);
+  --feed-accent-secondary: var(--app-accent-secondary);
+  --feed-accent-rgb: var(--app-accent-rgb);
   --app-background: var(--feed-bg);
   --app-card: var(--feed-card);
-  --app-card-soft: rgba(124, 236, 255, 0.06);
-  --app-card-strong: rgba(168, 140, 255, 0.14);
-  --app-text: var(--feed-text);
-  --app-text-muted: var(--feed-text-muted);
+  --app-card-soft: rgba(255, 255, 255, 0.04);
+  --app-card-strong: rgba(255, 255, 255, 0.08);
   --app-border: var(--feed-border);
-  --app-accent: var(--feed-accent);
-  --app-accent-secondary: var(--feed-accent-secondary);
-  --app-accent-rgb: var(--feed-accent-rgb);
   min-height: 100svh;
   background:
-    linear-gradient(90deg, rgba(124, 236, 255, 0.018) 0, transparent 32%),
     linear-gradient(180deg, #080b10 0%, #06090d 52%, #05080c 100%);
   color: var(--feed-text);
   font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
