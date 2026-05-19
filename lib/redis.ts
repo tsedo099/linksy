@@ -2,10 +2,20 @@ import Redis from "ioredis";
 
 /**
  * Build a Redis client with the Upstash-from-Vercel options every bus
- * needs. Centralised so a tweak (e.g. tls/family) only happens once.
+ * needs. Parses the URL ourselves and passes explicit constructor args —
+ * passing the URL string directly to `new Redis(url)` failed silently on
+ * Vercel (the connection opened then immediately closed) until we made
+ * the password / tls flag explicit. Centralised so a tweak (e.g.
+ * tls/family) only happens once.
  */
 export function buildRedis(url: string): Redis {
-  return new Redis(url, {
+  const u = new URL(url.trim());
+  return new Redis({
+    host: u.hostname,
+    port: Number(u.port || 6379),
+    username: u.username || "default",
+    password: decodeURIComponent(u.password),
+    tls: u.protocol === "rediss:" ? {} : undefined,
     maxRetriesPerRequest: 2,
     connectTimeout: 8000,
     family: 0,
