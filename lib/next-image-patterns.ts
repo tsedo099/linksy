@@ -29,6 +29,12 @@ export function getNextImageRemotePatterns(): NextImageRemotePattern[] {
     out.push({ protocol, hostname: h, pathname: "/**" });
   };
 
+  // Vercel Blob: any store deployed via @vercel/blob serves from a
+  // unique `*.public.blob.vercel-storage.com` subdomain. Wildcard the
+  // host so the user doesn't have to repeat the store id in env vars.
+  out.push({ protocol: "https", hostname: "*.public.blob.vercel-storage.com", pathname: "/**" });
+  out.push({ protocol: "https", hostname: "*.blob.vercel-storage.com", pathname: "/**" });
+
   const cdn = typeof process.env.NEXT_PUBLIC_MEDIA_CDN_BASE === "string"
     ? process.env.NEXT_PUBLIC_MEDIA_CDN_BASE.trim().replace(/\/$/, "")
     : "";
