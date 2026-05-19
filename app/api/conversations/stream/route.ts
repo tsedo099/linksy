@@ -5,6 +5,9 @@ import { isShuttingDown, registerShutdownCloser } from "@/lib/shutdown";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+// Hobby plan default is 10s — kills SSE every 10s, killing real-time
+// during the EventSource reconnect window. 60s is the Hobby ceiling.
+export const maxDuration = 60;
 
 const HEARTBEAT_MS = 25_000;
 

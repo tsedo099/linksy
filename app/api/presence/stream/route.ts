@@ -7,6 +7,7 @@ import { isShuttingDown, registerShutdownCloser } from "@/lib/shutdown";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const HEARTBEAT_MS = 25_000;
 const TTL_SWEEP_MS = 15_000;

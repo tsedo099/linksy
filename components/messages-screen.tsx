@@ -488,7 +488,9 @@ export function MessagesScreen() {
     }
 
     void pullTyping();
-    const id = window.setInterval(pullTyping, 3500);
+    // 3.5s felt slow ("typing real-time bish") — Neon pooler + Redis can
+    // handle the load now that the connection bug is fixed.
+    const id = window.setInterval(pullTyping, 1500);
 
     // Local sweep so the dots disappear smoothly between polls if a
     // peer's TTL lapses (the next GET would prune them anyway, but
