@@ -135,5 +135,12 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  // Exclude Next internals, the favicon, and any file with a static asset
+  // extension. Without the extension filter the middleware was rewriting
+  // requests for public assets like `/psda.png`, `/HAVAR.jpg`, etc. to
+  // `/login` (307) for unauthenticated visitors — the landing page logo
+  // and hero photos all 404'd as a result.
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpe?g|gif|webp|svg|ico|webm|mp4|mp3|ogg|woff2?|ttf|otf|eot|json|txt|xml|map|css|js)$).*)",
+  ],
 };
