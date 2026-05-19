@@ -68,6 +68,41 @@ async function loadUserStatus(userId: string): Promise<UserStatusRow | null> {
 }
 
 /**
+ * Display profile (id, username, displayName, avatarUrl) cached for 60s.
+ * Used by hot endpoints like POST /typing that need to publish the actor's
+ * profile on every keystroke. Display name / avatar change rarely; a minute
+ * of staleness is invisible to peers.
+ *
+ * Invalidate when the user updates their profile (display name, avatar).
+ */
+const USER_PROFILE_TTL_MS = 60_000;
+export type UserDisplayProfile = {
+  id: string;
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+};
+type UserProfileEntry = { row: UserDisplayProfile | null; expiresAt: number };
+const userProfileCache = new Map<string, UserProfileEntry>();
+
+export function invalidateUserProfileCache(userId: string) {
+  userProfileCache.delete(userId);
+}
+
+export async function getCachedUserDisplayProfile(userId: string): Promise<UserDisplayProfile | null> {
+  const now = Date.now();
+  const hit = userProfileCache.get(userId);
+  if (hit && hit.expiresAt > now) return hit.row;
+
+  const row = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, username: true, displayName: true, avatarUrl: true },
+  });
+  userProfileCache.set(userId, { row, expiresAt: now + USER_PROFILE_TTL_MS });
+  return row;
+}
+
+/**
  * Resolves the current user for API Route Handlers: verifies short-lived access JWT,
  * otherwise rotates refresh token + re-sets cookies via `cookies()` when valid.
  */

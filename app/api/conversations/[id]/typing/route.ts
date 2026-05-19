@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getUser } from "@/lib/auth";
+import { getUser, getCachedUserDisplayProfile } from "@/lib/auth";
 import { getBlockedUserIds } from "@/lib/user-blocks";
 import { getTypingBus } from "@/lib/typing-bus";
 import { parseRequestJsonAllowEmpty } from "@/lib/request-json";
@@ -18,19 +18,38 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!me) return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
 
   const { id: conversationId } = await params;
-  const member = await prisma.conversationMember.findUnique({
-    where: { userId_conversationId: { userId: me.userId, conversationId } },
-    select: { isRequest: true },
-  });
+  const now = new Date();
+
+  // Polled every ~3.5s — fire the 3 independent lookups in parallel so
+  // we pay one round trip's latency, not three. The typing rows fetch
+  // is the most expensive; running it speculatively is fine because we
+  // discard it if membership / block check fails.
+  const [member, blockedIds, rows] = await Promise.all([
+    prisma.conversationMember.findUnique({
+      where: { userId_conversationId: { userId: me.userId, conversationId } },
+      select: { isRequest: true },
+    }),
+    getBlockedUserIds(me.userId),
+    prisma.conversationTyping.findMany({
+      where: {
+        conversationId,
+        expiresAt: { gt: now },
+        userId: { not: me.userId },
+      },
+      select: {
+        expiresAt: true,
+        user: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
+      },
+      orderBy: { updatedAt: "desc" },
+    }),
+  ]);
+
   if (!member || member.isRequest) {
     return NextResponse.json({ typingUsers: [] });
   }
 
-  // Match the POST endpoint's safety check: if anyone the viewer has
-  // blocked is in this conversation, refuse to leak their presence.
-  // Without this, a blocked party could still know when the blocker is
-  // typing in a shared group (info leak).
-  const blockedIds = await getBlockedUserIds(me.userId);
+  // Block-leak guard: if anyone the viewer has blocked is in this convo,
+  // refuse to expose their typing status.
   if (blockedIds.length > 0) {
     const blockedMember = await prisma.conversationMember.findFirst({
       where: { conversationId, userId: { in: blockedIds } },
@@ -41,26 +60,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     }
   }
 
-  const now = new Date();
-  const rows = await prisma.conversationTyping.findMany({
-    where: {
-      conversationId,
-      expiresAt: { gt: now },
-      userId: { not: me.userId },
+  return NextResponse.json(
+    {
+      typingUsers: rows.map((row) => ({
+        ...row.user,
+        expiresAt: row.expiresAt,
+      })),
     },
-    select: {
-      expiresAt: true,
-      user: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
-    },
-    orderBy: { updatedAt: "desc" },
-  });
-
-  return NextResponse.json({
-    typingUsers: rows.map((row) => ({
-      ...row.user,
-      expiresAt: row.expiresAt,
-    })),
-  });
+    { headers: { "Cache-Control": "private, max-age=2" } },
+  );
 }
 
 // POST /api/conversations/[id]/typing - update typing status
@@ -132,10 +140,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     });
   }
 
-  const meRow = await prisma.user.findUnique({
-    where: { id: me.userId },
-    select: { id: true, username: true, displayName: true, avatarUrl: true },
-  });
+  // Use the 60s display-profile cache instead of hitting the DB on every
+  // keystroke — the typing POST runs on almost every key the user types.
+  const meRow = await getCachedUserDisplayProfile(me.userId);
   if (meRow) {
     await getTypingBus().publish({
       conversationId,
