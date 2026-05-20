@@ -16,6 +16,8 @@ import { trackActiveUser } from "@/lib/active-users";
 import { withMetrics } from "@/lib/with-metrics";
 import { scoreAdultContent } from "@/lib/adult-content";
 import { checkUserCanSendAdult } from "@/lib/age-gate";
+import { sendPushToUser } from "@/lib/push";
+import { logBackgroundError } from "@/lib/logger";
 
 function isMissingMessageReadAt(error: unknown) {
   return error instanceof Prisma.PrismaClientKnownRequestError
@@ -388,6 +390,51 @@ export const POST = withMetrics("/api/messages", async (req: NextRequest) => {
   }
 
   publishConversationMessageActivity(conversationId, "message");
+
+  // Web/push fan-out — every recipient who has push enabled gets an
+  // Instagram-style notification ('@yuri sent you a message: Hi'). Skipped
+  // for the sender themselves. Background-fire so the POST returns fast;
+  // failures are swallowed via logBackgroundError.
+  (async () => {
+    try {
+      const convo = await prisma.conversation.findUnique({
+        where: { id: conversationId },
+        select: {
+          isGroup: true,
+          name: true,
+          members: { select: { userId: true } },
+        },
+      });
+      if (!convo) return;
+      const senderProfile = message.sender;
+      const senderName = senderProfile.displayName || senderProfile.username;
+      const preview =
+        trimmedText.length > 0
+          ? trimmedText.length > 120 ? trimmedText.slice(0, 117) + "…" : trimmedText
+          : mediaUrl
+            ? (isVideoMediaUrl(mediaUrl) ? "📹 Sent a video" : isAudioMediaUrl(mediaUrl) ? "🎤 Voice message" : "📷 Sent a photo")
+            : "";
+      const title = convo.isGroup
+        ? `${senderName} in ${convo.name ?? "group"}`
+        : senderName;
+      const tag = `msg-${conversationId}`;
+      const url = `/messages?conversation=${conversationId}`;
+      await Promise.all(
+        convo.members
+          .filter((m) => m.userId !== me.userId)
+          .map((m) => sendPushToUser({
+            userId: m.userId,
+            kind: "message",
+            title,
+            body: preview,
+            url,
+            tag,
+          })),
+      );
+    } catch (err) {
+      logBackgroundError("messages.push")(err);
+    }
+  })();
 
   // Business metrics: count every successful send, distinguishing DM vs group
   // so the rollup matches the product funnel. Active-user tracker fires here
