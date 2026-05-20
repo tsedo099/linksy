@@ -8,6 +8,7 @@ import { shouldUnoptimizeNextImageSrc } from "@/lib/next-image-patterns";
 import { emitStoryViewed } from "@/lib/story-view-sync";
 import { useCurrentUserStore } from "@/lib/stores/current-user";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useConfirm } from "@/components/confirm-dialog";
 
 import type { ApiStoryGroup, ApiStoryItem } from "./feed-story-model";
 import { STORY_DURATION, STORY_GRADS } from "./feed-story-constants";
@@ -119,6 +120,7 @@ export function StoryViewer({ groups, startIdx, viewerId: viewerIdProp, onClose,
   onDeleted?: (storyId: string, authorId: string) => void;
 }) {
   const { locale } = useLanguagePreferences();
+  const confirm = useConfirm();
   const viewerIdFromStore = useCurrentUserStore((s) => s.user?.id ?? null);
   const viewerId = viewerIdProp ?? viewerIdFromStore;
   const [idx, setIdx] = useState(startIdx);
@@ -376,7 +378,7 @@ export function StoryViewer({ groups, startIdx, viewerId: viewerIdProp, onClose,
 
   async function deleteStory() {
     if (!item?.id || !group?.authorId || !isOwner || deletePending) return;
-    if (!window.confirm("Delete this story?")) return;
+    if (!(await confirm("Delete this story?"))) return;
 
     setDeletePending(true);
     try {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useConfirm } from "@/components/confirm-dialog";
 
 type AuthorizedApp = {
   applicationId: string;
@@ -22,6 +23,7 @@ export function ConnectedAppsScreen() {
   const [apps, setApps] = useState<AuthorizedApp[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [revoking, setRevoking] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   useEffect(() => {
     let alive = true;
@@ -39,7 +41,7 @@ export function ConnectedAppsScreen() {
   }, []);
 
   async function revoke(applicationId: string, appName: string) {
-    if (!window.confirm(`Revoke ${appName}'s access? Tokens issued to this app will stop working immediately.`)) {
+    if (!(await confirm(`Revoke ${appName}'s access? Tokens issued to this app will stop working immediately.`))) {
       return;
     }
     setRevoking(applicationId);

@@ -6,6 +6,7 @@ import { PasswordHealthBanner } from "@/components/password-health-banner";
 import { SentryUserContext } from "@/components/sentry-user-context";
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import { ThemeProvider } from "@/components/theme-provider";
+import { ConfirmProvider } from "@/components/confirm-dialog";
 import { WebVitalsReporter } from "@/components/web-vitals-reporter";
 import {
   DEFAULT_LANGUAGE,
@@ -123,15 +124,17 @@ export default async function RootLayout({
       <body>
         <ThemeProvider>
           <LanguageProvider>
-            <CsrfFetchBridge />
-            <SentryUserContext />
-            <ClientErrorBoundary scope="app.shell">
-              {children}
-            </ClientErrorBoundary>
-            <PasswordHealthBanner />
-            <CookieConsentBanner />
-            <ServiceWorkerRegister />
-            <WebVitalsReporter />
+            <ConfirmProvider>
+              <CsrfFetchBridge />
+              <SentryUserContext />
+              <ClientErrorBoundary scope="app.shell">
+                {children}
+              </ClientErrorBoundary>
+              <PasswordHealthBanner />
+              <CookieConsentBanner />
+              <ServiceWorkerRegister />
+              <WebVitalsReporter />
+            </ConfirmProvider>
           </LanguageProvider>
         </ThemeProvider>
       </body>

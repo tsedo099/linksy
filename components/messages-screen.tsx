@@ -21,6 +21,7 @@ import { ConvoItem } from "@/components/messages/convo-item";
 import { Empty } from "@/components/messages/empty";
 import { ComposeModal } from "@/components/messages/compose-modal";
 import { AddPeopleDialog } from "@/components/messages/add-people-dialog";
+import { useConfirm } from "@/components/confirm-dialog";
 import {
   IcAttach,
   IcBack,
@@ -65,6 +66,7 @@ export function MessagesScreen() {
   const ms = useMemo(() => messagesScreenStrings(language), [language]);
   const searchParams = useSearchParams();
   const router = useRouter();
+  const confirm = useConfirm();
   const urlConversationId = searchParams.get("conversation");
   const urlTargetUserId = searchParams.get("userId");
   // Pull from the shared current-user store so MessagesScreen always has
@@ -1098,7 +1100,7 @@ export function MessagesScreen() {
 
   async function handleRemoveMember(targetUserId: string) {
     if (!activeId) return;
-    if (!window.confirm("Remove this member from the group?")) return;
+    if (!(await confirm("Remove this member from the group?"))) return;
     const previous = convos;
     setConvos((current) => current.map((c) => {
       if (c.id !== activeId) return c;
@@ -1174,7 +1176,7 @@ export function MessagesScreen() {
 
   const handleUnsendMessage = useCallback(async (message: ApiMessage) => {
     if (message.senderId !== myId) return;
-    if (!window.confirm(ms.unsendConfirm)) return;
+    if (!(await confirm(ms.unsendConfirm))) return;
     try {
       const response = await fetch(`/api/messages/${message.id}`, { method: "DELETE" });
       if (!response.ok) throw new Error(await apiErrorMessage(response, "Could not unsend message."));
@@ -1396,7 +1398,7 @@ export function MessagesScreen() {
   }
 
   async function deleteConvoFromSidebar(conversationId: string) {
-    if (!window.confirm(ms.deleteChatConfirm)) return;
+    if (!(await confirm(ms.deleteChatConfirm))) return;
     setConvoContext(null);
     setActionBusy("delete");
     try {
@@ -1419,7 +1421,7 @@ export function MessagesScreen() {
 
   async function handleDeleteChat() {
     if (!activeId || actionBusy) return;
-    if (!window.confirm(ms.deleteChatConfirm)) return;
+    if (!(await confirm(ms.deleteChatConfirm))) return;
 
     setActionBusy("delete");
     try {
@@ -1458,7 +1460,7 @@ export function MessagesScreen() {
 
   async function handleLeaveGroup() {
     if (!activeId || actionBusy) return;
-    if (!window.confirm(ms.leaveGroupConfirm)) return;
+    if (!(await confirm(ms.leaveGroupConfirm))) return;
     setActionBusy("delete");
     try {
       const response = await fetch(`/api/conversations/${activeId}/leave`, { method: "DELETE" });
@@ -1479,7 +1481,7 @@ export function MessagesScreen() {
 
   async function handleBlockUser() {
     if (!other?.id || actionBusy) return;
-    if (!window.confirm(ms.blockUserConfirmFmt(other.username))) return;
+    if (!(await confirm(ms.blockUserConfirmFmt(other.username)))) return;
 
     setActionBusy("block");
     try {

@@ -74,6 +74,7 @@ import {
 import { EditProfilePage } from "@/components/settings/edit-profile-page";
 import { NotifPage } from "@/components/settings/notif-page";
 import { TwoFactorPage } from "@/components/settings/two-factor-page";
+import { useConfirm } from "@/components/confirm-dialog";
 
 // Icons, UI atoms, types, helpers, and page components moved to components/settings/*.
 
@@ -1289,6 +1290,7 @@ function PasskeysPage({
   onBack?: () => void;
   onToast: (kind: "error" | "success", message: string) => void;
 }) {
+  const confirm = useConfirm();
   const [passkeys, setPasskeys] = useState<PasskeyRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -1361,7 +1363,7 @@ function PasskeysPage({
   }
 
   async function revokePasskey(passkey: PasskeyRow) {
-    if (!window.confirm("Remove this passkey? You can add it again later.")) return;
+    if (!(await confirm("Remove this passkey? You can add it again later."))) return;
     try {
       const res = await fetch(`/api/auth/passkeys/${passkey.id}`, { method: "DELETE" });
       const data = await res.json().catch(() => null);
@@ -1443,6 +1445,7 @@ function DeveloperPage({
   onBack?: () => void;
   onToast: (kind: "error" | "success", message: string) => void;
 }) {
+  const confirm = useConfirm();
   const [apps, setApps] = useState<OAuthAppRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -1506,7 +1509,7 @@ function DeveloperPage({
   }
 
   async function revokeApp(app: OAuthAppRow) {
-    if (!window.confirm(`Revoke ${app.name}? All tokens for this app will stop working.`)) return;
+    if (!(await confirm(`Revoke ${app.name}? All tokens for this app will stop working.`))) return;
     try {
       const res = await fetch(`/api/developer/oauth-apps/${app.id}`, { method: "DELETE" });
       const data = await res.json().catch(() => null);
@@ -1837,11 +1840,12 @@ function DeactivateAccountPage({
   onToast: (kind: "error" | "success", message: string) => void;
 }) {
   const router = useRouter();
+  const confirm = useConfirm();
   const [busy, setBusy] = useState(false);
 
   async function handleDeactivate() {
     if (busy) return;
-    if (!window.confirm("Deactivate your account? Sign in again any time to reactivate.")) return;
+    if (!(await confirm("Deactivate your account? Sign in again any time to reactivate."))) return;
     setBusy(true);
     try {
       const response = await fetch("/api/user/deactivate", { method: "POST" });

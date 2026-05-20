@@ -4,6 +4,7 @@ import { AppShell } from "@/components/app-shell";
 import { useLanguagePreferences } from "@/components/language-provider";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useConfirm } from "@/components/confirm-dialog";
 
 type Tab = "overview" | "safety" | "users" | "reports" | "verifications" | "feedback" | "audit" | "deletions";
 
@@ -320,6 +321,7 @@ export function AdminPanelScreen() {
   const router = useRouter();
   const { language } = useLanguagePreferences();
   const t = language === "mn" ? STRINGS.mn : STRINGS.en;
+  const confirm = useConfirm();
 
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [tab, setTab] = useState<Tab>("overview");
@@ -537,7 +539,7 @@ function SafetyPanel({ t }: { t: typeof STRINGS.en }) {
   }, [warnings]);
 
   const deleteWarning = async (id: string) => {
-    if (!window.confirm(t.confirmDelete)) return;
+    if (!(await confirm(t.confirmDelete))) return;
     setBusy(`del-${id}`);
     try {
       const res = await fetch(`/api/admin/safety/warnings/${id}`, { method: "DELETE", credentials: "include" });
@@ -551,7 +553,7 @@ function SafetyPanel({ t }: { t: typeof STRINGS.en }) {
   };
 
   const unban = async (userId: string) => {
-    if (!window.confirm(t.confirmUnban)) return;
+    if (!(await confirm(t.confirmUnban))) return;
     const reason = window.prompt("Reason (optional)") ?? undefined;
     setBusy(`unban-${userId}`);
     try {
@@ -727,7 +729,7 @@ function UsersPanel({ t }: { t: typeof STRINGS.en }) {
   }, [load]);
 
   const unban = async (userId: string) => {
-    if (!window.confirm(t.confirmUnban)) return;
+    if (!(await confirm(t.confirmUnban))) return;
     setBusy(`unban-${userId}`);
     try {
       const res = await fetch(`/api/admin/safety/users/${userId}/unban`, {
@@ -1326,8 +1328,7 @@ function ReportsPanel({ t }: { t: typeof STRINGS.en }) {
 
     if (postIds.length === 0) return;
 
-    // eslint-disable-next-line no-alert
-    const confirmed = window.confirm(t.reportsBulkConfirmFmt(postIds.length));
+    const confirmed = await confirm(t.reportsBulkConfirmFmt(postIds.length));
     if (!confirmed) return;
 
     setBulkBusy(true);
