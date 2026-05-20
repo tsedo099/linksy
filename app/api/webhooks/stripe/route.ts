@@ -10,6 +10,7 @@ import {
   findUserIdForStripeSubscription,
 } from "@/lib/subscription-sync";
 import { sendBillingReceiptEmail } from "@/lib/email-templates";
+import { sendPushToUser } from "@/lib/push";
 
 export const runtime = "nodejs";
 /** Stripe signs raw body bytes — disable the route cache so Next never replays. */
@@ -152,7 +153,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
       typeof session.payment_intent === "string"
         ? session.payment_intent
         : session.payment_intent?.id ?? null;
-    await prisma.tip
+    const tip = await prisma.tip
       .update({
         where: { id: tipId },
         data: {
@@ -160,13 +161,33 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
           settledAt: new Date(),
           ...(intentId ? { stripePaymentIntentId: intentId } : {}),
         },
+        select: {
+          toId: true,
+          amount: true,
+          currency: true,
+          fromUser: { select: { displayName: true, username: true } },
+        },
       })
       .catch((err) => {
         logger.warn(
           { scope: "webhook.stripe", event: "checkout.session.completed.tip", tipId, err: errorPayload(err) },
           "could not flip Tip to SUCCEEDED from checkout.session.completed",
         );
+        return null;
       });
+    // Background push to the recipient — '@yuri sent you a tip 💜'.
+    if (tip) {
+      const senderName = tip.fromUser.displayName || tip.fromUser.username;
+      const amount = (Number(tip.amount) / 100).toFixed(2);
+      void sendPushToUser({
+        userId: tip.toId,
+        kind: "message",
+        title: `${senderName} sent you a tip 💜`,
+        body: `${tip.currency.toUpperCase()} ${amount}`,
+        url: "/notifications",
+        tag: `tip-${tipId}`,
+      }).catch(() => undefined);
+    }
     return;
   }
 
