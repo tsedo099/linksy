@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { requireUser } from "@/lib/auth";
+import { NextRequest, NextResponse } from "next/server";
+import { getUser } from "@/lib/auth";
 import { sendPushToUser } from "@/lib/push";
 import { prisma } from "@/lib/prisma";
 
@@ -11,9 +11,9 @@ import { prisma } from "@/lib/prisma";
  * Returns a JSON diagnostic so it's easy to see if the subscription
  * row exists, if VAPID is configured, and if the dispatch succeeded.
  */
-export async function POST() {
-  const me = await requireUser();
-  if (me instanceof NextResponse) return me;
+export async function POST(req: NextRequest) {
+  const me = await getUser(req);
+  if (!me) return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
 
   const subs = await prisma.pushSubscription.findMany({
     where: { userId: me.userId },
