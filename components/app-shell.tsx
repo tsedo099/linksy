@@ -2,6 +2,7 @@
 
 import { CreateModal, CreateDropdown } from "@/components/create-modal";
 import { CurrentUserAvatar } from "@/components/current-user-avatar";
+import { PushAutoPrompt } from "@/components/push-auto-prompt";
 import { IncomingCallListener } from "@/components/incoming-call-listener";
 import { useLanguagePreferences } from "@/components/language-provider";
 import { SearchDrawerCard } from "@/components/search-drawer-card";
@@ -868,6 +869,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </button>
         </div>
       </header>
+      <PushAutoPrompt />
     </div>
   );
 }

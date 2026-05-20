@@ -42,6 +42,51 @@ export async function registerAndSubscribePush(publicKey: string): Promise<void>
   }
 }
 
+/**
+ * Silent subscribe: only runs if Notification.permission === 'granted'.
+ * Used on login to re-bind a returning user without showing a prompt
+ * (browser security would refuse anyway). Errors are swallowed — this
+ * is a best-effort background task.
+ */
+export async function silentSubscribeIfGranted(publicKey: string): Promise<void> {
+  if (typeof window === "undefined") return;
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+  if (typeof Notification === "undefined") return;
+  if (Notification.permission !== "granted") return;
+  try {
+    const reg = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+    await navigator.serviceWorker.ready;
+    // Reuse the existing subscription if there is one; otherwise create.
+    const existing = await reg.pushManager.getSubscription();
+    if (existing) {
+      const json = existing.toJSON();
+      if (json.endpoint && json.keys?.p256dh && json.keys?.auth) {
+        // Best-effort upsert — server is idempotent.
+        await fetch("/api/push/subscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ endpoint: json.endpoint, keys: { p256dh: json.keys.p256dh, auth: json.keys.auth } }),
+        }).catch(() => undefined);
+      }
+      return;
+    }
+    const serverKeyBytes = urlBase64ToUint8Array(publicKey);
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: new Uint8Array([...serverKeyBytes]),
+    });
+    const json = sub.toJSON();
+    if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) return;
+    await fetch("/api/push/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ endpoint: json.endpoint, keys: { p256dh: json.keys.p256dh, auth: json.keys.auth } }),
+    }).catch(() => undefined);
+  } catch {
+    /* silent — background re-bind, no user-facing UI */
+  }
+}
+
 export async function unregisterPush(): Promise<void> {
   if (!("serviceWorker" in navigator)) return;
   const reg = await navigator.serviceWorker.getRegistration("/");
