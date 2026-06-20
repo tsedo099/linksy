@@ -109,7 +109,7 @@
     "pino-pretty": "^11.3.0",
     "postcss": "^8.5.3",
     "prettier": "^3.8.3",
-    "size-limit": "^11.2.0",
+    "size-limit": "^12.1.0",
     "tailwindcss": "^4.1.4",
     "tsx": "^4.21.0",
     "typescript": "^6.0.2",
